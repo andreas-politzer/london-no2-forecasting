@@ -3,8 +3,8 @@ import './App.css'
 
 const MAP_W = 3000
 const MAP_H = 1998
-const SAFE_H = 1560
-const SAFE_CY = 980
+const SAFE_H = 1620
+const SAFE_CY = 910
 
 type Station = {
   code: string
@@ -76,11 +76,57 @@ export default function App() {
               if (e.key === 'Enter' || e.key === ' ') setSelected(s)
             }}
           >
-            <g className="pin">
-              <circle className="dot" r={34} />
-              <text className="code" y={-58}>
-                {s.code}
-              </text>
+            <ellipse
+              className="ring"
+              cx={0}
+              cy={-4}
+              rx={78}
+              ry={26}
+              fill="none"
+              stroke="#c23b2e"
+              strokeWidth={9}
+              opacity={0}
+            />
+            <ellipse cx={6} cy={4} rx={52} ry={14} fill="rgba(0,0,0,0.3)" />
+            <g className="lift">
+              <g transform="scale(1.55)">
+                <path
+                  className="pawn-fill"
+                  d="M-26 0C-26 -16 -14 -26 -9 -52H9C14 -26 26 -16 26 0Z"
+                  stroke="#ffffff"
+                  strokeWidth={3}
+                />
+                <ellipse cx={0} cy={-52} rx={16} ry={5} fill="#ffffff" />
+                <circle
+                  className="pawn-fill"
+                  cx={0}
+                  cy={-70}
+                  r={19}
+                  stroke="#ffffff"
+                  strokeWidth={3}
+                />
+                <rect
+                  x={-34}
+                  y={-128}
+                  width={68}
+                  height={34}
+                  rx={8}
+                  fill="#ffffff"
+                  stroke="#1d2a4a"
+                  strokeWidth={3}
+                />
+                <text
+                  x={0}
+                  y={-104}
+                  textAnchor="middle"
+                  fontFamily="'Barlow Semi Condensed', 'Arial Narrow', sans-serif"
+                  fontWeight={700}
+                  fontSize={25}
+                  fill="#1d2a4a"
+                >
+                  {s.code}
+                </text>
+              </g>
             </g>
           </g>
         ))}

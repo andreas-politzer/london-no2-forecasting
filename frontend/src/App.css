@@ -42,36 +42,25 @@ body {
   outline: none;
 }
 
-.pin {
-  transform-box: fill-box;
-  transform-origin: center;
-  transition: transform 0.15s ease;
-}
-
-.station:hover .pin,
-.station:focus-visible .pin {
-  transform: scale(1.25);
-}
-
-.dot {
-  fill: var(--red);
-  stroke: #ffffff;
-  stroke-width: 10;
-}
-
-.station.selected .dot {
+.pawn-fill {
   fill: var(--water);
 }
 
-.code {
-  font-family: var(--sign-font);
-  font-size: 56px;
-  font-weight: 700;
-  fill: var(--navy);
-  stroke: #ffffff;
-  stroke-width: 12;
-  paint-order: stroke;
-  text-anchor: middle;
+.lift {
+  transition: transform 0.15s ease;
+}
+
+.station:hover .lift,
+.station:focus-visible .lift {
+  transform: translateY(-24px);
+}
+
+.ring {
+  transition: opacity 0.15s ease;
+}
+
+.station.selected .ring {
+  opacity: 1;
 }
 
 .sign {
