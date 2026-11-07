@@ -1,0 +1,17 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ipynb_checkpoints/
+
+# macOS und Editor
+.DS_Store
+
+# Rohdaten und Geheimnisse bleiben draußen
+data/raw/
+.env
+
+# Frontend (kommt später)
+node_modules/
+frontend/dist/
