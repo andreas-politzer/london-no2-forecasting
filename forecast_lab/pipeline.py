@@ -1,11 +1,14 @@
 """Rechenkern und Auswertung: Stationen x Horizonte x Folds x Modelle.
 
-Auswertbarkeit (festgelegt vor den Ergebnissen, steht im Manifest):
-- Ein Fold zaehlt nur, wenn mindestens 80 % seiner Testtage UND mindestens 80 %
-  seiner Trainingstage tatsaechlich gemessen sind (interpolierte Tage zaehlen nie).
-- Eine Zahl je Station/Modell/Horizont wird nur gezeigt, wenn mindestens 80 % der
-  Folds zaehlen. Sonst steht dort "nicht auswertbar" mit Grund.
-- Ausgeschlossene Folds bleiben sichtbar (Tabelle und Verteilung).
+Zwei Regelwerke fuer die Auswertbarkeit (siehe RULES):
+- "streng" ist die Hauptauswertung, vor den Ergebnissen festgelegt.
+- "gelockert" ist eine Zusatzansicht, NACHTRAEGLICH festgelegt, nachdem die
+  Ergebnisse der strengen Regel bekannt waren. Sie ersetzt die Hauptauswertung nie.
+
+Ein Fold zaehlt nur, wenn genug Test- UND Trainingstage tatsaechlich gemessen sind
+(interpolierte Tage zaehlen nie). Eine Zahl je Station/Modell/Horizont wird nur
+gezeigt, wenn genug Folds zaehlen. Sonst steht dort "nicht auswertbar" mit Grund.
+Ausgeschlossene Folds bleiben sichtbar (Tabellen und Verteilung).
 
 Aufruf im Projektordner:  python -m forecast_lab.pipeline
 """
@@ -38,10 +41,19 @@ from forecast_lab.models.gbm import gbm_calendar, gbm_recursive
 from forecast_lab.models.prophet_model import prophet_model
 from forecast_lab.models.sarima import sarima
 
-MIN_TEST_COVERAGE = 0.8    # Anteil gemessener Testtage je Fold
-MIN_TRAIN_COVERAGE = 0.8   # Anteil gemessener Trainingstage je Fold
-MIN_FOLD_SHARE = 0.8       # Anteil zaehlender Folds je Station/Modell/Horizont
 EPS = 1e-12
+
+RULES = {
+    "streng": dict(
+        test=0.8, train=0.8, share=0.8,
+        hinweis="Hauptauswertung, vor den Ergebnissen festgelegt"),
+    "gelockert": dict(
+        test=0.7, train=0.7, share=0.7,
+        hinweis="Zusatzansicht, NACHTRAEGLICH festgelegt, nachdem die Ergebnisse der "
+                "strengen Regel bekannt waren. Ersetzt die Hauptauswertung nie."),
+}
+# test/train: Mindestanteil tatsaechlich gemessener Tage je Fold
+# share: Mindestanteil zaehlender Folds je Station/Modell/Horizont
 
 DEFAULT_CSV = Path(__file__).resolve().parent.parent / "data" / "raw" / "london_air_quality_2010_2023_top5_sites.csv"
 
@@ -59,17 +71,32 @@ def model_params(fn) -> dict:
     return getattr(fn, "params", None) or {"name": fn.__name__}
 
 
-def judge_fold(row: dict) -> dict:
-    """Setzt `zaehlt` und `grund` nach den festgelegten Regeln."""
+def _col(base: str, rule: str) -> str:
+    """Spaltenname je Regelwerk: 'streng' behaelt den Basisnamen."""
+    return base if rule == "streng" else f"{base}_{rule}"
+
+
+def _suffix(rule: str) -> str:
+    return "" if rule == "streng" else f"_{rule}"
+
+
+def _judge(row: dict, rule: str) -> None:
+    r = RULES[rule]
     reasons = []
     if row["status"] != "ok":
         reasons.append("Fehler beim Rechnen")
-    if row["test_abdeckung"] < MIN_TEST_COVERAGE - EPS:
-        reasons.append(f"Testabdeckung {row['test_abdeckung']:.0%} < {MIN_TEST_COVERAGE:.0%}")
-    if row["train_abdeckung"] < MIN_TRAIN_COVERAGE - EPS:
-        reasons.append(f"Trainingsabdeckung {row['train_abdeckung']:.0%} < {MIN_TRAIN_COVERAGE:.0%}")
-    row["zaehlt"] = not reasons
-    row["grund"] = "; ".join(reasons)
+    if row["test_abdeckung"] < r["test"] - EPS:
+        reasons.append(f"Testabdeckung {row['test_abdeckung']:.0%} < {r['test']:.0%}")
+    if row["train_abdeckung"] < r["train"] - EPS:
+        reasons.append(f"Trainingsabdeckung {row['train_abdeckung']:.0%} < {r['train']:.0%}")
+    row[_col("zaehlt", rule)] = not reasons
+    row[_col("grund", rule)] = "; ".join(reasons)
+
+
+def judge_fold(row: dict) -> dict:
+    """Bewertet einen Fold nach allen Regelwerken (setzt zaehlt/grund je Regel)."""
+    for rule in RULES:
+        _judge(row, rule)
     return row
 
 
@@ -112,40 +139,47 @@ def run_station(csv_path: str, station: str, horizons=cv.HORIZONS, model_names=N
 
 
 # ------------------------------------------------------------------ Auswertung
-def aggregate_scores(folds: pd.DataFrame) -> pd.DataFrame:
+def aggregate_scores(folds: pd.DataFrame, rule: str = "streng") -> pd.DataFrame:
     """CV-Ergebnis je Station/Modell/Horizont. Zahl nur, wenn genug Folds zaehlen."""
+    share_min = RULES[rule]["share"]
+    zc = _col("zaehlt", rule)
     rows = []
     cvf = folds[~folds["final"]]
     for (st, mo, h), g in cvf.groupby(["Station", "Modell", "Horizont"], sort=True):
-        n, k = len(g), int(g["zaehlt"].sum())
+        n, k = len(g), int(g[zc].sum())
         share = k / n if n else 0.0
-        ok = share >= MIN_FOLD_SHARE - EPS
-        v = g.loc[g["zaehlt"], "mae"].dropna()
+        ok = share >= share_min - EPS
+        v = g.loc[g[zc], "mae"].dropna()
         rows.append(dict(
-            Station=st, Modell=mo, Horizont=h, folds_gesamt=n, folds_zaehlend=k,
+            Station=st, Modell=mo, Horizont=h, regel=rule,
+            folds_gesamt=n, folds_zaehlend=k,
             anteil_zaehlend=round(share, 4), auswertbar=bool(ok),
             mae_mittel=float(v.mean()) if ok and len(v) else np.nan,
             mae_median=float(v.median()) if ok and len(v) else np.nan,
-            grund="" if ok else f"nur {k} von {n} Folds zaehlen ({share:.0%} < {MIN_FOLD_SHARE:.0%})",
+            grund="" if ok else f"nur {k} von {n} Folds zaehlen ({share:.0%} < {share_min:.0%})",
         ))
     return pd.DataFrame(rows)
 
 
-def final_scores(folds: pd.DataFrame) -> pd.DataFrame:
+def final_scores(folds: pd.DataFrame, rule: str = "streng") -> pd.DataFrame:
     """Einmaliger Abschlusstest je Station/Modell/Horizont."""
+    zc, gc = _col("zaehlt", rule), _col("grund", rule)
     f = folds[folds["final"]]
     out = f[["Station", "Modell", "Horizont", "Ursprung", "gueltige_Tage", "Tage",
-             "test_abdeckung", "train_abdeckung", "zaehlt", "grund"]].copy()
-    out["mae"] = np.where(f["zaehlt"], f["mae"], np.nan)
-    return out.rename(columns={"zaehlt": "auswertbar"}).reset_index(drop=True)
+             "test_abdeckung", "train_abdeckung", zc, gc]].copy()
+    out["regel"] = rule
+    out["mae"] = np.where(f[zc], f["mae"], np.nan)
+    return out.rename(columns={zc: "auswertbar", gc: "grund"}).reset_index(drop=True)
 
 
-def exclusions(folds: pd.DataFrame):
+def exclusions(folds: pd.DataFrame, rule: str = "streng"):
     """(Liste aller ausgeschlossenen Folds, Verteilung je Station/Horizont/Jahr)."""
-    ex = folds[~folds["zaehlt"]]
-    cols = ["Station", "Modell", "Horizont", "Ursprung", "final",
-            "test_abdeckung", "train_abdeckung", "grund"]
-    listing = ex[cols].reset_index(drop=True)
+    zc, gc = _col("zaehlt", rule), _col("grund", rule)
+    ex = folds[~folds[zc]]
+    listing = ex[["Station", "Modell", "Horizont", "Ursprung", "final",
+                  "test_abdeckung", "train_abdeckung", gc]].rename(columns={gc: "grund"})
+    listing.insert(0, "regel", rule)
+    listing = listing.reset_index(drop=True)
     cvx = ex[~ex["final"]].copy()
     if len(cvx):
         cvx["Jahr"] = pd.to_datetime(cvx["Ursprung"]).dt.year
@@ -153,6 +187,7 @@ def exclusions(folds: pd.DataFrame):
                 .rename("ausgeschlossene_Urspruenge").reset_index())
     else:
         dist = pd.DataFrame(columns=["Station", "Horizont", "Jahr", "ausgeschlossene_Urspruenge"])
+    dist.insert(0, "regel", rule)
     return listing, dist
 
 
@@ -172,9 +207,15 @@ def _git(*args):
         return None
 
 
-def build_manifest(csv_path, stations, horizons, model_names, folds, times, dauer_s) -> dict:
+def _git_info() -> dict:
+    """Git-Stand zu Beginn des Laufs (Ergebnisordner zaehlt nicht als Aenderung)."""
+    status = _git("status", "--porcelain", "--", ".", ":(exclude)results")
+    return dict(commit=_git("rev-parse", "HEAD"),
+                unveraenderte_dateien=(status == "") if status is not None else None)
+
+
+def build_manifest(csv_path, stations, horizons, model_names, folds, times, dauer_s, git_info) -> dict:
     import sklearn, statsmodels, prophet
-    status = _git("status", "--porcelain")
     return dict(
         erzeugt_utc=datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S"),
         dauer_s=round(dauer_s, 1),
@@ -189,18 +230,19 @@ def build_manifest(csv_path, stations, horizons, model_names, folds, times, daue
         evaluation=dict(
             metrik="MAE auf tatsaechlich gemessenen Testtagen",
             imputation="linear, nur innerhalb des Trainingsfensters; Raender ffill/bfill; nie im Test",
-            min_test_abdeckung=MIN_TEST_COVERAGE, min_train_abdeckung=MIN_TRAIN_COVERAGE,
-            min_anteil_zaehlender_folds=MIN_FOLD_SHARE,
-            abdeckung_bedeutet="Anteil tatsaechlich gemessener Tage, interpolierte zaehlen nicht"),
+            abdeckung_bedeutet="Anteil tatsaechlich gemessener Tage, interpolierte zaehlen nicht",
+            hauptauswertung="streng",
+            regeln=RULES),
         modelle={n: model_params(MODEL_FACTORIES[n]()) for n in model_names},
         versionen=dict(python=platform.python_version(), pandas=pd.__version__, numpy=np.__version__,
                        sklearn=sklearn.__version__, statsmodels=statsmodels.__version__,
                        prophet=prophet.__version__),
         threads={v: os.environ.get(v) for v in ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS")},
-        git=dict(commit=_git("rev-parse", "HEAD"), unveraenderte_dateien=(status == "") if status is not None else None),
-        ergebnis=dict(fold_zeilen=int(len(folds)), fehler_folds=int((folds["status"] != "ok").sum()),
-                      ausgeschlossene_folds=int((~folds["zaehlt"]).sum()),
-                      sarima_nicht_konvergiert=int(((folds["Modell"] == "SARIMA") & (folds["konvergiert"] == False)).sum())),
+        git=git_info,
+        ergebnis=dict(
+            fold_zeilen=int(len(folds)), fehler_folds=int((folds["status"] != "ok").sum()),
+            ausgeschlossene_folds={r: int((~folds[_col("zaehlt", r)]).sum()) for r in RULES},
+            sarima_nicht_konvergiert=int(((folds["Modell"] == "SARIMA") & (folds["konvergiert"] == False)).sum())),
         laufzeiten_s=times,
     )
 
@@ -225,6 +267,7 @@ def main():
     out = Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
 
+    git_info = _git_info()
     t0 = time.time()
     with ProcessPoolExecutor(max_workers=min(len(stations), os.cpu_count() or 1)) as ex:
         res = []
@@ -237,17 +280,20 @@ def main():
 
     forecasts.to_csv(out / "forecasts.csv", index=False)
     folds.to_csv(out / "folds.csv", index=False)
-    aggregate_scores(folds).to_csv(out / "scores.csv", index=False)
-    final_scores(folds).to_csv(out / "final_scores.csv", index=False)
-    listing, dist = exclusions(folds)
-    listing.to_csv(out / "ausgeschlossene_folds.csv", index=False)
-    dist.to_csv(out / "ausschluesse_verteilung.csv", index=False)
+    for rule in RULES:
+        sfx = _suffix(rule)
+        aggregate_scores(folds, rule).to_csv(out / f"scores{sfx}.csv", index=False)
+        final_scores(folds, rule).to_csv(out / f"final_scores{sfx}.csv", index=False)
+        listing, dist = exclusions(folds, rule)
+        listing.to_csv(out / f"ausgeschlossene_folds{sfx}.csv", index=False)
+        dist.to_csv(out / f"ausschluesse_verteilung{sfx}.csv", index=False)
     data.station_metadata(data.load_raw(a.csv)).reset_index().to_csv(out / "station_metadata.csv", index=False)
-    manifest = build_manifest(a.csv, stations, horizons, names, folds, times, time.time() - t0)
+    manifest = build_manifest(a.csv, stations, horizons, names, folds, times, time.time() - t0, git_info)
     with open(out / "run_manifest.json", "w", encoding="utf-8") as fh:
         json.dump(manifest, fh, indent=1, ensure_ascii=False)
-    print(f"fertig in {round(time.time() - t0)} s | Fehler-Folds: {manifest['ergebnis']['fehler_folds']} "
-          f"| ausgeschlossene Folds: {manifest['ergebnis']['ausgeschlossene_folds']} | Ausgabe: {out}")
+    e = manifest["ergebnis"]
+    print(f"fertig in {round(time.time() - t0)} s | Fehler-Folds: {e['fehler_folds']} "
+          f"| ausgeschlossene Folds: {e['ausgeschlossene_folds']} | Ausgabe: {out}")
 
 
 if __name__ == "__main__":
