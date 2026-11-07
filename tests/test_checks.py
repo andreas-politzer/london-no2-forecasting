@@ -111,3 +111,18 @@ def test_gbm_models_independent_of_future_values():
         b = cv.run_fold(s2, f, fn)["prognose"].to_numpy()
         assert np.allclose(a, b, atol=1e-8), fn.__name__
         assert np.isfinite(a).all() and len(a) == 30, fn.__name__
+
+
+def test_judge_fold_rules():
+    from forecast_lab.pipeline import judge_fold
+    base = dict(status="ok", test_abdeckung=1.0, train_abdeckung=1.0)
+    ok = judge_fold(dict(base))
+    assert ok["zaehlt"] is True and ok["grund"] == ""
+    assert judge_fold({**base, "test_abdeckung": 0.8})["zaehlt"] is True
+    assert judge_fold({**base, "train_abdeckung": 292 / 365})["zaehlt"] is True
+    t = judge_fold({**base, "test_abdeckung": 0.79})
+    assert t["zaehlt"] is False and "Testabdeckung" in t["grund"]
+    r = judge_fold({**base, "train_abdeckung": 0.5})
+    assert r["zaehlt"] is False and "Trainingsabdeckung" in r["grund"]
+    e = judge_fold({**base, "status": "fehler: X"})
+    assert e["zaehlt"] is False and "Fehler" in e["grund"]
