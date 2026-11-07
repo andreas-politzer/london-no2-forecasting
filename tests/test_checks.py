@@ -62,3 +62,36 @@ def test_kc1_control_matches_notebook():
     r = np.abs(test - train.iloc[-730:].mean()).mean()
     assert abs(m - 16.57) < 0.005, m
     assert abs(r - 9.027015697607274) < 1e-9, r
+
+
+def test_sarima_independent_of_future_values():
+    from forecast_lab.models.sarima import sarima
+    rng = np.random.default_rng(1)
+    s = SERIES["KC1"]
+    f = cv.make_folds(30)[8]
+    fn = sarima()
+    a = cv.run_fold(s, f, fn)["prognose"].to_numpy()
+    assert fn.last_converged is not False, "SARIMA nicht konvergiert"
+    s2 = s.copy()
+    future = s2.index >= f.origin
+    s2[future] = rng.uniform(0, 500, future.sum())
+    b = cv.run_fold(s2, f, fn)["prognose"].to_numpy()
+    assert np.allclose(a, b, atol=1e-8)
+    assert np.isfinite(a).all() and len(a) == 30
+
+
+
+def test_prophet_independent_of_future_values():
+    from forecast_lab.models.prophet_model import prophet_model
+    rng = np.random.default_rng(2)
+    s = SERIES["KC1"]
+    f = cv.make_folds(30)[8]
+    fn = prophet_model()
+    assert fn.params["weekly_seasonality"] is True and fn.params["yearly_seasonality"] is True
+    a = cv.run_fold(s, f, fn)["prognose"].to_numpy()
+    s2 = s.copy()
+    future = s2.index >= f.origin
+    s2[future] = rng.uniform(0, 500, future.sum())
+    b = cv.run_fold(s2, f, fn)["prognose"].to_numpy()
+    assert np.allclose(a, b, atol=1e-8)
+    assert np.isfinite(a).all() and len(a) == 30
