@@ -1,63 +1,43 @@
+:root {
+  --bg: #ffffff;
+  --panel: #f6f7f9;
+  --ink: #0f172a;
+  --muted: #64748b;
+  --line: #e2e8f0;
+  --navy: #1d2a4a;
+  --red: #c23b2e;
+  --water: #3b79c3;
+  --sign-paper: #fbf9f1;
+  --ui-font: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --sign-font: 'Barlow Semi Condensed', 'Arial Narrow', sans-serif;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--ui-font);
+  overflow: hidden;
+}
+
 .app {
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-  background: #efe6d2;
-}
-
-.bar {
-  flex: 0 0 56px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 0 20px;
-  background: #1d3b53;
-  color: #fff8e7;
-}
-
-.title {
-  margin: 0;
-  font-size: 1.1rem;
-  letter-spacing: 0.04em;
-}
-
-.info {
-  margin: 0;
-  font-size: 0.95rem;
-}
-
-.stage-wrap {
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  container-type: size;
-}
-
-.stage {
   position: relative;
-  width: min(100cqw, 150cqh);
-  aspect-ratio: 3 / 2;
+  width: 100vw;
+  height: 100dvh;
+  overflow: hidden;
+  container-type: inline-size;
+  background: var(--panel);
 }
 
-.map {
+.board {
+  position: absolute;
+  inset: 0;
   display: block;
   width: 100%;
   height: 100%;
-}
-
-.layer {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
+  user-select: none;
 }
 
 .station {
-  pointer-events: auto;
   cursor: pointer;
   outline: none;
 }
@@ -74,21 +54,73 @@
 }
 
 .dot {
-  fill: #c0392b;
-  stroke: #fff8e7;
+  fill: var(--red);
+  stroke: #ffffff;
   stroke-width: 10;
 }
 
 .station.selected .dot {
-  fill: #1d3b53;
+  fill: var(--water);
 }
 
 .code {
-  font-size: 52px;
+  font-family: var(--sign-font);
+  font-size: 56px;
   font-weight: 700;
-  fill: #1b1b1b;
-  stroke: #fff8e7;
+  fill: var(--navy);
+  stroke: #ffffff;
   stroke-width: 12;
   paint-order: stroke;
   text-anchor: middle;
+}
+
+.sign {
+  position: absolute;
+  right: 32px;
+  bottom: 56px;
+  font-size: clamp(18px, 2.4cqw, 42px);
+  transform: rotate(5deg);
+  background: var(--sign-paper);
+  border: 0.3em solid var(--navy);
+  border-radius: 0.6em;
+  padding: 0.4em 1em 0.5em;
+  box-shadow: 0.2em 0.35em 0.7em rgba(0, 0, 0, 0.3);
+  font-family: var(--sign-font);
+  pointer-events: none;
+}
+
+.sign::after {
+  content: '';
+  position: absolute;
+  inset: 0.2em;
+  border: 0.09em solid var(--navy);
+  border-radius: 0.35em;
+}
+
+.sign .pc {
+  font-size: 0.65em;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--red);
+  font-weight: 700;
+}
+
+.sign .nm {
+  font-size: 1.9em;
+  font-weight: 700;
+  line-height: 1.02;
+  color: var(--navy);
+}
+
+.attr {
+  position: absolute;
+  left: 16px;
+  bottom: 12px;
+  max-width: calc(100% - 32px);
+  font-family: var(--ui-font);
+  font-size: 11px;
+  color: #334155;
+  background: rgba(255, 255, 255, 0.85);
+  padding: 3px 8px;
+  border-radius: 4px;
 }
