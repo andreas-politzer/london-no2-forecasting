@@ -126,3 +126,33 @@ def test_judge_fold_rules():
     assert r["zaehlt"] is False and "Trainingsabdeckung" in r["grund"]
     e = judge_fold({**base, "status": "fehler: X"})
     assert e["zaehlt"] is False and "Fehler" in e["grund"]
+
+
+def test_aggregate_scores_and_exclusions():
+    import pandas as pd
+    from forecast_lab.pipeline import aggregate_scores, exclusions, final_scores
+
+    def row(st, i, zaehlt, mae_, final=False, train=1.0):
+        start = pd.Timestamp("2023-01-01") if final else pd.Timestamp("2018-01-01") + pd.Timedelta(days=91 * i)
+        return dict(Station=st, Modell="M", Horizont=7, Ursprung=start.date(), final=final, mae=mae_,
+                    zaehlt=zaehlt, grund="" if zaehlt else "Ausschluss", status="ok", gueltige_Tage=7,
+                    Tage=7, test_abdeckung=1.0, train_abdeckung=train, konvergiert=None)
+
+    rows = [row("X", i, i not in (3, 4), float(i + 1)) for i in range(10)]
+    rows.append(row("X", 0, True, 3.0, final=True))
+    rows += [row("Y", i, i < 7, 2.0, train=0.4) for i in range(10)]
+    f = pd.DataFrame(rows)
+
+    sc = aggregate_scores(f).set_index("Station")
+    assert sc.loc["X", "folds_zaehlend"] == 8 and bool(sc.loc["X", "auswertbar"]) is True
+    assert abs(sc.loc["X", "mae_mittel"] - 5.75) < 1e-12      # (1+2+3+6+7+8+9+10)/8
+    assert abs(sc.loc["X", "mae_median"] - 6.5) < 1e-12
+    assert bool(sc.loc["Y", "auswertbar"]) is False            # nur 70 % der Folds zaehlen
+    assert np.isnan(sc.loc["Y", "mae_mittel"]) and sc.loc["Y", "grund"].startswith("nur 7 von 10")
+
+    assert abs(final_scores(f).set_index("Station").loc["X", "mae"] - 3.0) < 1e-12
+
+    listing, dist = exclusions(f)
+    assert len(listing) == 5
+    d = dist.set_index(["Station", "Horizont", "Jahr"])["ausgeschlossene_Urspruenge"]
+    assert d[("X", 7, 2018)] == 2 and d[("Y", 7, 2019)] == 2 and d[("Y", 7, 2020)] == 1

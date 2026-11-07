@@ -1,13 +1,32 @@
-"""Rechenkern: Stationen x Horizonte x Folds x Modelle -> Fold-Tabelle und Prognosen.
+"""Rechenkern und Auswertung: Stationen x Horizonte x Folds x Modelle.
 
-Auswertbarkeit (festgelegt vor den Ergebnissen, siehe Manifest):
+Auswertbarkeit (festgelegt vor den Ergebnissen, steht im Manifest):
 - Ein Fold zaehlt nur, wenn mindestens 80 % seiner Testtage UND mindestens 80 %
   seiner Trainingstage tatsaechlich gemessen sind (interpolierte Tage zaehlen nie).
-- Ausgeschlossene Folds bleiben in der Tabelle, mit Grund.
+- Eine Zahl je Station/Modell/Horizont wird nur gezeigt, wenn mindestens 80 % der
+  Folds zaehlen. Sonst steht dort "nicht auswertbar" mit Grund.
+- Ausgeschlossene Folds bleiben sichtbar (Tabelle und Verteilung).
+
+Aufruf im Projektordner:  python -m forecast_lab.pipeline
 """
 from __future__ import annotations
+import os
+
+# Vor dem Import von numpy/sklearn: ein Rechenthread je Prozess (sonst blockieren
+# sich die parallelen Prozesse gegenseitig und der Lauf wird um ein Vielfaches langsamer).
+for _var in ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS"):
+    os.environ.setdefault(_var, "1")
+
+import argparse
+import hashlib
+import json
+import platform
+import subprocess
 import time
 import warnings
+from concurrent.futures import ProcessPoolExecutor
+from datetime import datetime, timezone
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -21,8 +40,10 @@ from forecast_lab.models.sarima import sarima
 
 MIN_TEST_COVERAGE = 0.8    # Anteil gemessener Testtage je Fold
 MIN_TRAIN_COVERAGE = 0.8   # Anteil gemessener Trainingstage je Fold
-MIN_FOLD_SHARE = 0.8       # Anteil zaehlender Folds je Station/Modell/Horizont (Teil B)
+MIN_FOLD_SHARE = 0.8       # Anteil zaehlender Folds je Station/Modell/Horizont
 EPS = 1e-12
+
+DEFAULT_CSV = Path(__file__).resolve().parent.parent / "data" / "raw" / "london_air_quality_2010_2023_top5_sites.csv"
 
 MODEL_FACTORIES = {
     "Mean": lambda: mean_all,
@@ -88,3 +109,146 @@ def run_station(csv_path: str, station: str, horizons=cv.HORIZONS, model_names=N
             times[f"{name}|{h}"] = round(time.time() - t0, 1)
     forecasts = pd.concat(fc_rows) if fc_rows else pd.DataFrame()
     return forecasts, pd.DataFrame(fold_rows), times
+
+
+# ------------------------------------------------------------------ Auswertung
+def aggregate_scores(folds: pd.DataFrame) -> pd.DataFrame:
+    """CV-Ergebnis je Station/Modell/Horizont. Zahl nur, wenn genug Folds zaehlen."""
+    rows = []
+    cvf = folds[~folds["final"]]
+    for (st, mo, h), g in cvf.groupby(["Station", "Modell", "Horizont"], sort=True):
+        n, k = len(g), int(g["zaehlt"].sum())
+        share = k / n if n else 0.0
+        ok = share >= MIN_FOLD_SHARE - EPS
+        v = g.loc[g["zaehlt"], "mae"].dropna()
+        rows.append(dict(
+            Station=st, Modell=mo, Horizont=h, folds_gesamt=n, folds_zaehlend=k,
+            anteil_zaehlend=round(share, 4), auswertbar=bool(ok),
+            mae_mittel=float(v.mean()) if ok and len(v) else np.nan,
+            mae_median=float(v.median()) if ok and len(v) else np.nan,
+            grund="" if ok else f"nur {k} von {n} Folds zaehlen ({share:.0%} < {MIN_FOLD_SHARE:.0%})",
+        ))
+    return pd.DataFrame(rows)
+
+
+def final_scores(folds: pd.DataFrame) -> pd.DataFrame:
+    """Einmaliger Abschlusstest je Station/Modell/Horizont."""
+    f = folds[folds["final"]]
+    out = f[["Station", "Modell", "Horizont", "Ursprung", "gueltige_Tage", "Tage",
+             "test_abdeckung", "train_abdeckung", "zaehlt", "grund"]].copy()
+    out["mae"] = np.where(f["zaehlt"], f["mae"], np.nan)
+    return out.rename(columns={"zaehlt": "auswertbar"}).reset_index(drop=True)
+
+
+def exclusions(folds: pd.DataFrame):
+    """(Liste aller ausgeschlossenen Folds, Verteilung je Station/Horizont/Jahr)."""
+    ex = folds[~folds["zaehlt"]]
+    cols = ["Station", "Modell", "Horizont", "Ursprung", "final",
+            "test_abdeckung", "train_abdeckung", "grund"]
+    listing = ex[cols].reset_index(drop=True)
+    cvx = ex[~ex["final"]].copy()
+    if len(cvx):
+        cvx["Jahr"] = pd.to_datetime(cvx["Ursprung"]).dt.year
+        dist = (cvx.groupby(["Station", "Horizont", "Jahr"])["Ursprung"].nunique()
+                .rename("ausgeschlossene_Urspruenge").reset_index())
+    else:
+        dist = pd.DataFrame(columns=["Station", "Horizont", "Jahr", "ausgeschlossene_Urspruenge"])
+    return listing, dist
+
+
+# ------------------------------------------------------------------ Manifest
+def _sha256(path) -> str:
+    h = hashlib.sha256()
+    with open(path, "rb") as fh:
+        for chunk in iter(lambda: fh.read(1 << 20), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def _git(*args):
+    try:
+        return subprocess.check_output(["git", *args], stderr=subprocess.DEVNULL).decode().strip()
+    except Exception:
+        return None
+
+
+def build_manifest(csv_path, stations, horizons, model_names, folds, times, dauer_s) -> dict:
+    import sklearn, statsmodels, prophet
+    status = _git("status", "--porcelain")
+    return dict(
+        erzeugt_utc=datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S"),
+        dauer_s=round(dauer_s, 1),
+        daten=dict(datei=Path(csv_path).name, sha256=_sha256(csv_path),
+                   groesse_bytes=os.path.getsize(csv_path), schadstoff=data.POLLUTANT,
+                   kalender=[data.FIRST_DAY, data.LAST_DAY],
+                   aggregation="Tagesmittel (resample D, mean), fehlende Tage bleiben NaN"),
+        stationen=list(stations), horizonte=list(horizons),
+        cv=dict(start=str(cv.CV_START.date()), ende=str(cv.CV_END.date()),
+                schritt_tage=cv.STEP_DAYS, trainingsfenster_tage=cv.TRAIN_DAYS,
+                abschlusstest_ursprung=str(cv.FINAL_ORIGIN.date())),
+        evaluation=dict(
+            metrik="MAE auf tatsaechlich gemessenen Testtagen",
+            imputation="linear, nur innerhalb des Trainingsfensters; Raender ffill/bfill; nie im Test",
+            min_test_abdeckung=MIN_TEST_COVERAGE, min_train_abdeckung=MIN_TRAIN_COVERAGE,
+            min_anteil_zaehlender_folds=MIN_FOLD_SHARE,
+            abdeckung_bedeutet="Anteil tatsaechlich gemessener Tage, interpolierte zaehlen nicht"),
+        modelle={n: model_params(MODEL_FACTORIES[n]()) for n in model_names},
+        versionen=dict(python=platform.python_version(), pandas=pd.__version__, numpy=np.__version__,
+                       sklearn=sklearn.__version__, statsmodels=statsmodels.__version__,
+                       prophet=prophet.__version__),
+        threads={v: os.environ.get(v) for v in ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS")},
+        git=dict(commit=_git("rev-parse", "HEAD"), unveraenderte_dateien=(status == "") if status is not None else None),
+        ergebnis=dict(fold_zeilen=int(len(folds)), fehler_folds=int((folds["status"] != "ok").sum()),
+                      ausgeschlossene_folds=int((~folds["zaehlt"]).sum()),
+                      sarima_nicht_konvergiert=int(((folds["Modell"] == "SARIMA") & (folds["konvergiert"] == False)).sum())),
+        laufzeiten_s=times,
+    )
+
+
+# ------------------------------------------------------------------ Aufruf
+def _worker(args):
+    csv, st, hs, names = args
+    return st, *run_station(csv, st, hs, names)
+
+
+def main():
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--csv", default=str(DEFAULT_CSV))
+    ap.add_argument("--stations", default=",".join(data.STATIONS))
+    ap.add_argument("--horizons", default=",".join(map(str, cv.HORIZONS)))
+    ap.add_argument("--models", default=",".join(MODEL_FACTORIES))
+    ap.add_argument("--out", default="results")
+    a = ap.parse_args()
+    stations = a.stations.split(",")
+    horizons = [int(x) for x in a.horizons.split(",")]
+    names = a.models.split(",")
+    out = Path(a.out)
+    out.mkdir(parents=True, exist_ok=True)
+
+    t0 = time.time()
+    with ProcessPoolExecutor(max_workers=min(len(stations), os.cpu_count() or 1)) as ex:
+        res = []
+        for r in ex.map(_worker, [(a.csv, st, horizons, names) for st in stations]):
+            print(f"Station {r[0]} fertig ({round(time.time() - t0)} s)", flush=True)
+            res.append(r)
+    forecasts = pd.concat([r[1] for r in res])
+    folds = pd.concat([r[2] for r in res]).reset_index(drop=True)
+    times = {r[0]: r[3] for r in res}
+
+    forecasts.to_csv(out / "forecasts.csv", index=False)
+    folds.to_csv(out / "folds.csv", index=False)
+    aggregate_scores(folds).to_csv(out / "scores.csv", index=False)
+    final_scores(folds).to_csv(out / "final_scores.csv", index=False)
+    listing, dist = exclusions(folds)
+    listing.to_csv(out / "ausgeschlossene_folds.csv", index=False)
+    dist.to_csv(out / "ausschluesse_verteilung.csv", index=False)
+    data.station_metadata(data.load_raw(a.csv)).reset_index().to_csv(out / "station_metadata.csv", index=False)
+    manifest = build_manifest(a.csv, stations, horizons, names, folds, times, time.time() - t0)
+    with open(out / "run_manifest.json", "w", encoding="utf-8") as fh:
+        json.dump(manifest, fh, indent=1, ensure_ascii=False)
+    print(f"fertig in {round(time.time() - t0)} s | Fehler-Folds: {manifest['ergebnis']['fehler_folds']} "
+          f"| ausgeschlossene Folds: {manifest['ergebnis']['ausgeschlossene_folds']} | Ausgabe: {out}")
+
+
+if __name__ == "__main__":
+    main()
