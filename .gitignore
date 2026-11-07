@@ -15,3 +15,6 @@ data/raw/
 # Frontend (kommt später)
 node_modules/
 frontend/dist/
+
+# Ergebnisse: Entscheidung ueber Export in Git steht noch aus
+results/
