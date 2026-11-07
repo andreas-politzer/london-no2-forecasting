@@ -95,3 +95,19 @@ def test_prophet_independent_of_future_values():
     b = cv.run_fold(s2, f, fn)["prognose"].to_numpy()
     assert np.allclose(a, b, atol=1e-8)
     assert np.isfinite(a).all() and len(a) == 30
+
+
+
+def test_gbm_models_independent_of_future_values():
+    from forecast_lab.models.gbm import gbm_calendar, gbm_recursive
+    rng = np.random.default_rng(3)
+    s = SERIES["KC1"]
+    f = cv.make_folds(30)[8]
+    for fn in (gbm_recursive(), gbm_calendar()):
+        a = cv.run_fold(s, f, fn)["prognose"].to_numpy()
+        s2 = s.copy()
+        future = s2.index >= f.origin
+        s2[future] = rng.uniform(0, 500, future.sum())
+        b = cv.run_fold(s2, f, fn)["prognose"].to_numpy()
+        assert np.allclose(a, b, atol=1e-8), fn.__name__
+        assert np.isfinite(a).all() and len(a) == 30, fn.__name__
