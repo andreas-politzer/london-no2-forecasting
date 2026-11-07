@@ -55,7 +55,9 @@ RULES = {
 # test/train: Mindestanteil tatsaechlich gemessener Tage je Fold
 # share: Mindestanteil zaehlender Folds je Station/Modell/Horizont
 
-DEFAULT_CSV = Path(__file__).resolve().parent.parent / "data" / "raw" / "london_air_quality_2010_2023_top5_sites.csv"
+PROJECT_ROOT = Path(__file__).resolve().parents[2]   # .../london-no2-forecasting
+DEFAULT_CSV = PROJECT_ROOT / "data" / "raw" / "london_air_quality_2010_2023_top5_sites.csv"
+DEFAULT_OUT = PROJECT_ROOT / "results"
 
 MODEL_FACTORIES = {
     "Mean": lambda: mean_all,
@@ -202,7 +204,8 @@ def _sha256(path) -> str:
 
 def _git(*args):
     try:
-        return subprocess.check_output(["git", *args], stderr=subprocess.DEVNULL).decode().strip()
+        return subprocess.check_output(["git", *args], stderr=subprocess.DEVNULL,
+                                       cwd=PROJECT_ROOT).decode().strip()
     except Exception:
         return None
 
@@ -259,7 +262,7 @@ def main():
     ap.add_argument("--stations", default=",".join(data.STATIONS))
     ap.add_argument("--horizons", default=",".join(map(str, cv.HORIZONS)))
     ap.add_argument("--models", default=",".join(MODEL_FACTORIES))
-    ap.add_argument("--out", default="results")
+    ap.add_argument("--out", default=str(DEFAULT_OUT))
     a = ap.parse_args()
     stations = a.stations.split(",")
     horizons = [int(x) for x in a.horizons.split(",")]

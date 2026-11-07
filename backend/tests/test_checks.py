@@ -6,7 +6,7 @@ import numpy as np
 from forecast_lab import cv, data
 from forecast_lab.models import baseline
 
-CSV = Path(__file__).resolve().parent.parent / "data" / "raw" / "london_air_quality_2010_2023_top5_sites.csv"
+CSV = Path(__file__).resolve().parents[2] / "data" / "raw" / "london_air_quality_2010_2023_top5_sites.csv"
 RAW = data.load_raw(str(CSV))
 SERIES = {s: data.daily_series(RAW, s) for s in data.STATIONS}
 
