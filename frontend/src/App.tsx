@@ -14,6 +14,9 @@ const SAFE_CY = 910
 
 type Station = {
   code: string
+  place: string
+  authority: string
+  type: string
   lat: number
   lon: number
   x: number
@@ -23,11 +26,56 @@ type Station = {
 type Tab = 'history' | 'models'
 
 const STATIONS: Station[] = [
-  { code: 'EA6', lat: 51.5309, lon: -0.2925, x: 265, y: 350 },
-  { code: 'KC1', lat: 51.521, lon: -0.2135, x: 1435, y: 585 },
-  { code: 'MY1', lat: 51.5225, lon: -0.1546, x: 2307, y: 549 },
-  { code: 'BL0', lat: 51.5223, lon: -0.1258, x: 2733, y: 554 },
-  { code: 'RI2', lat: 51.4762, lon: -0.2304, x: 1185, y: 1651 },
+  {
+    code: 'EA6',
+    place: 'Hanger Lane Gyratory',
+    authority: 'Ealing',
+    type: 'Roadside',
+    lat: 51.5309,
+    lon: -0.2925,
+    x: 265,
+    y: 350,
+  },
+  {
+    code: 'KC1',
+    place: 'North Kensington',
+    authority: 'Kensington and Chelsea',
+    type: 'Urban Background',
+    lat: 51.521,
+    lon: -0.2135,
+    x: 1435,
+    y: 585,
+  },
+  {
+    code: 'MY1',
+    place: 'Marylebone Road',
+    authority: 'Westminster',
+    type: 'Kerbside',
+    lat: 51.5225,
+    lon: -0.1546,
+    x: 2307,
+    y: 549,
+  },
+  {
+    code: 'BL0',
+    place: 'Bloomsbury',
+    authority: 'Camden',
+    type: 'Urban Background',
+    lat: 51.5223,
+    lon: -0.1258,
+    x: 2733,
+    y: 554,
+  },
+  {
+    code: 'RI2',
+    place: 'Barnes Wetlands',
+    authority: 'Richmond upon Thames',
+    type: 'Suburban',
+    lat: 51.4762,
+    lon: -0.2304,
+    x: 1185,
+    y: 1651,
+  },
 ]
 
 const TABS: { id: Tab; label: string }[] = [
@@ -104,7 +152,7 @@ export default function App() {
               transform={`translate(${s.x} ${s.y})`}
               role="button"
               tabIndex={0}
-              aria-label={`Station ${s.code}`}
+              aria-label={`Station ${s.code}, ${s.place}`}
               onClick={() => setSelected(s)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') setSelected(s)
@@ -167,7 +215,7 @@ export default function App() {
         </svg>
 
         <div className="sign" aria-hidden="true">
-          <div className="pc">N1 · Air quality</div>
+          <div className="pc">NW1 · Air quality</div>
           <div className="nm">
             London NO₂
             <br />
@@ -186,10 +234,11 @@ export default function App() {
           <>
             <header className="panel-head">
               <div>
-                <h2 className="panel-title">Station {selected.code}</h2>
+                <h2 className="panel-title">
+                  {selected.code} · {selected.place}
+                </h2>
                 <p className="panel-sub">
-                  {selected.lat.toFixed(4)}° N,{' '}
-                  {Math.abs(selected.lon).toFixed(4)}° W
+                  {selected.authority} · {selected.type}
                 </p>
               </div>
               <button
