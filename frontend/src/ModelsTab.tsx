@@ -28,11 +28,20 @@ type FinalRow = {
   mae: number | null
 }
 
+type FoldRow = {
+  model: string
+  horizon: number
+  origin: string
+  counts_strict: boolean | null
+  counts_relaxed: boolean | null
+}
+
 type RuleBlock = { cv: CvRow[]; final: FinalRow[] }
 
 type StationData = {
   station: string
   rules: { streng: RuleBlock; gelockert: RuleBlock }
+  folds: FoldRow[]
 }
 
 type Meta = { models: string[]; horizons: number[] }
@@ -64,17 +73,34 @@ function loadMeta(): Promise<Meta> {
   return metaPromise
 }
 
-function cvCells(rows: CvRow[]): Cell[] {
+function cvCells(
+  rows: CvRow[],
+  folds: FoldRow[],
+  rule: 'streng' | 'gelockert',
+): Cell[] {
   return rows.map((r) => {
     const counted = r.folds_counted ?? 0
     const total = r.folds_total ?? 0
+    const counting = folds
+      .filter(
+        (f) =>
+          f.model === r.model &&
+          f.horizon === r.horizon &&
+          (rule === 'streng' ? f.counts_strict : f.counts_relaxed),
+      )
+      .map((f) => f.origin)
+      .sort()
+    const from = counting[0]?.slice(0, 7)
+    const to = counting[counting.length - 1]?.slice(0, 7)
     const ok = r.evaluable === true && r.mae_mean !== null
     return {
       model: r.model,
       horizon: r.horizon,
       mae: ok ? r.mae_mean : null,
       tipTitle: ok ? UI.modelColumn : TERMS.na.title,
-      tipShort: ok ? cellTip(counted, total) : naTip(counted, total),
+      tipShort: ok
+        ? cellTip(counted, total, from, to)
+        : naTip(counted, total),
       tipMore: ok ? undefined : TERMS.na.short,
     }
   })
@@ -162,7 +188,11 @@ function ScoreTable({
                   }
                   // Only the multi-start comparison highlights a best value;
                   // the single final period (withTips = false) never does.
-                  const isBest = withTips && cell.mae === best.get(horizon)
+                  const bestValue = best.get(horizon)
+                  const isBest =
+                    withTips &&
+                    bestValue !== undefined &&
+                    Math.round(cell.mae * 10) === Math.round(bestValue * 10)
                   const text = numberFormat.format(cell.mae)
                   return (
                     <td key={horizon} className={isBest ? 'best' : undefined}>
@@ -224,7 +254,7 @@ export default function ModelsTab({ code }: { code: string }) {
   const { station, meta } = current
   const strict = station.rules.streng
   const relaxed = station.rules.gelockert
-  const strictCells = cvCells(strict.cv)
+  const strictCells = cvCells(strict.cv, station.folds, 'streng')
   const anyStrict = strictCells.some((c) => c.mae !== null)
   const maxShare = Math.max(0, ...strict.cv.map((r) => r.share ?? 0))
 
@@ -238,6 +268,11 @@ export default function ModelsTab({ code }: { code: string }) {
       <p className="method-line">
         <InfoPopover {...TERMS.method}>{TERMS.method.title}</InfoPopover>
       </p>
+
+      <div className="notice">
+        <strong>{UI.howToReadTitle}</strong>
+        <p>{UI.howToRead}</p>
+      </div>
 
       <h3 className="block-title">
         {UI.strictTitle}
@@ -283,7 +318,7 @@ export default function ModelsTab({ code }: { code: string }) {
           </h3>
           <p className="warning">{UI.relaxedWarning}</p>
           <ScoreTable
-            cells={cvCells(relaxed.cv)}
+            cells={cvCells(relaxed.cv, station.folds, 'gelockert')}
             models={meta.models}
             horizons={meta.horizons}
             withTips

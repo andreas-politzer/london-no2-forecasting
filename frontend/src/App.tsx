@@ -6,6 +6,7 @@ import {
   type RefObject,
 } from 'react'
 import './App.css'
+import HistoryTab from './HistoryTab'
 import ModelsTab from './ModelsTab'
 import { UI } from './texts'
 
@@ -322,13 +323,7 @@ export default function App() {
               {tab === 'models' ? (
                 <ModelsTab code={selected.code} />
               ) : (
-              <div className="placeholder">
-                <span className="placeholder-tag">Folgt</span>
-                <p>
-                  Der gemessene NO₂-Verlauf der Station {selected.code} wird
-                  hier erscheinen, mit markierten Datenlücken.
-                </p>
-              </div>
+                <HistoryTab key={selected.code} code={selected.code} />
               )}
             </div>
           </>

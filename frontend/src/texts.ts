@@ -99,6 +99,12 @@ export const TERMS: Record<string, Term> = {
     short:
       'Fett und blau hinterlegt ist der niedrigste mittlere Fehler unter den auswertbaren Modellen dieser Spalte. Das ist keine Aussage über statistische Signifikanz.',
   },
+  monthly: {
+    title: 'Monatsmittel',
+    short:
+      'Der Durchschnitt aller gültigen Tageswerte eines Monats. Ein Tag ist gültig, wenn dafür mindestens 18 verschiedene Stundenwerte gemessen wurden.',
+    more: 'Monate ohne gültigen Tag bleiben leer, es wird nichts aufgefüllt. Die Linie dient nur zum Ansehen. Die Modelle rechnen mit den einzelnen Tageswerten, nicht mit Monatsmitteln.',
+  },
 }
 
 export const UI = {
@@ -128,6 +134,16 @@ export const UI = {
   finalSubtitle: 'ein einzelner Zeitraum',
   moreLabel: 'Genauer',
   closeLabel: 'Schließen',
+  historyTitle: 'Gemessener Verlauf',
+  historyUnit: 'NO₂ in µg/m³, Monatsmittel',
+  historyLegendGap:
+    'Eine Lücke in der Linie heißt: In diesem Monat gab es keinen einzigen gültigen Messtag. Hohle Punkte: weniger als die Hälfte der Tage gemessen.',
+  historyHint: 'Mit dem Finger oder der Maus über die Grafik fahren, um einen Monat zu sehen.',
+  historyFinalBand: 'Gegenprobe',
+  historyEmpty: 'Für diese Station liegen keine Messwerte vor.',
+  howToReadTitle: 'So liest du die Tabelle',
+  howToRead:
+    'Jede Zahl zeigt, wie viele µg/m³ die Prognose im Durchschnitt pro Tag danebenlag. Kleiner ist besser. Das sind keine Vorhersagen für die Zukunft, sondern Rückblick-Tests: Jedes Modell rät an vielen vergangenen Startpunkten, und wir vergleichen mit dem, was tatsächlich gemessen wurde.',
 }
 
 export function horizonLabel(days: number): string {
@@ -138,10 +154,69 @@ export function noStrictBody(maxSharePercent: number): string {
   return `Je nach Modell und Prognosehorizont erfüllten höchstens ${maxSharePercent} % der Prognosestarts die Anforderungen an die Datenabdeckung. Gefordert sind mindestens 80 %. Deshalb zeigen wir hier keine vergleichbaren Fehlerwerte.`
 }
 
-export function cellTip(counted: number, total: number): string {
-  return `Mittelwert über ${counted} von ${total} Prognosestarts.`
+export function cellTip(
+  counted: number,
+  total: number,
+  from?: string,
+  to?: string,
+): string {
+  const base = `Mittelwert über ${counted} von ${total} Prognosestarts`
+  if (!from || !to) return `${base}.`
+  return `${base}, gestartet zwischen ${monthLabel(from)} und ${monthLabel(to)}.`
 }
 
 export function naTip(counted: number, total: number): string {
   return `Nur ${counted} von ${total} Prognosestarts erfüllten die Anforderungen an die Datenabdeckung.`
+}
+
+const MONTH_NAMES = [
+  'Januar',
+  'Februar',
+  'März',
+  'April',
+  'Mai',
+  'Juni',
+  'Juli',
+  'August',
+  'September',
+  'Oktober',
+  'November',
+  'Dezember',
+]
+
+const oneDecimal = new Intl.NumberFormat('de-DE', {
+  minimumFractionDigits: 1,
+  maximumFractionDigits: 1,
+})
+
+export function monthLabel(yearMonth: string): string {
+  const [year, month] = yearMonth.split('-')
+  return `${MONTH_NAMES[Number(month) - 1]} ${year}`
+}
+
+function germanDate(iso: string): string {
+  const [year, month, day] = iso.split('-')
+  return `${day}.${month}.${year}`
+}
+
+export function historyCoverage(
+  measured: number,
+  total: number,
+  firstDay: string,
+  lastDay: string,
+): string {
+  const percent = Math.round((measured / total) * 100)
+  return `An ${measured.toLocaleString('de-DE')} von ${total.toLocaleString('de-DE')} Tagen gemessen (${percent} %). Erster gültiger Messtag: ${germanDate(firstDay)}, letzter: ${germanDate(lastDay)}.`
+}
+
+export function historyReadout(
+  yearMonth: string,
+  mean: number | null,
+  days: number,
+  daysInMonth: number,
+): string {
+  if (mean === null) {
+    return `${monthLabel(yearMonth)}: kein gültiger Messtag`
+  }
+  return `${monthLabel(yearMonth)}: ${oneDecimal.format(mean)} µg/m³, ${days} von ${daysInMonth} Tagen gemessen`
 }

@@ -553,3 +553,71 @@ body {
   font-weight: 700;
   cursor: pointer;
 }
+
+/* ---- Verlauf-Tab ---- */
+.hist-chart {
+  display: block;
+  width: 100%;
+  height: auto;
+  cursor: crosshair;
+  touch-action: pan-y;
+}
+
+.hist-grid {
+  stroke: var(--line);
+  stroke-width: 1;
+}
+
+.hist-tick {
+  fill: var(--muted);
+  font-family: var(--ui-font);
+  font-size: 11px;
+}
+
+.hist-line {
+  fill: none;
+  stroke: var(--water);
+  stroke-width: 1.8;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.hist-dot {
+  fill: var(--water);
+  stroke: var(--bg);
+  stroke-width: 1;
+}
+
+.hist-dot-low {
+  fill: var(--bg);
+  stroke: var(--water);
+  stroke-width: 1.5;
+}
+
+.hist-guide {
+  stroke: var(--muted);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+}
+
+.hist-band {
+  fill: var(--navy);
+  opacity: 0.07;
+}
+
+.hist-band-label {
+  fill: var(--navy);
+  font-family: var(--ui-font);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.hist-readout {
+  min-height: 1.4em;
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--navy);
+}
