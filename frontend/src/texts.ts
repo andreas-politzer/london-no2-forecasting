@@ -1,0 +1,147 @@
+// All user-facing German texts of the explorer live here.
+// Model keys are the exact names used in the result files.
+
+export type Term = {
+  title: string
+  short: string
+  more?: string
+}
+
+export type ModelInfo = {
+  label: string
+  short: string
+  more: string
+}
+
+export const MODEL_INFO: Record<string, ModelInfo> = {
+  Mean: {
+    label: 'Mittelwert',
+    short:
+      'Sagt für jeden Tag denselben Wert voraus: den Durchschnitt der letzten 365 Tage vor dem Prognosestart.',
+    more: 'Das einfachste denkbare Modell. Es kennt weder Wochentage noch Jahreszeiten. Es dient als einfache Vergleichsgröße: Ein komplexeres Modell sollte möglichst einen geringeren Prognosefehler erreichen.',
+  },
+  'Seasonal Naive (7)': {
+    label: 'Seasonal Naive',
+    short:
+      'Wiederholt die zuletzt beobachtete Woche: Jeder Wochentag bekommt den Wert des gleichen Wochentags der Vorwoche.',
+    more: 'Die 7 steht für den Wochenrhythmus. Bei längeren Horizonten wird die letzte beobachtete Woche immer wieder aneinandergereiht. Eine einfache Vergleichsgröße für Daten mit Wochenmuster.',
+  },
+  SARIMA: {
+    label: 'SARIMA',
+    short:
+      'Klassisches Statistikmodell. Es nutzt, dass der Wert von heute dem von gestern ähnelt und dass sich der Wochenrhythmus wiederholt.',
+    more: 'Verwendet wird die Konfiguration (1,0,1)(1,0,1,7) mit konstantem Trend: je ein autoregressiver und ein gleitender Term, einmal für Tage und einmal für Wochen. Die Parameter werden bei jedem Prognosestart neu geschätzt.',
+  },
+  'Prophet (Woche + Jahr explizit)': {
+    label: 'Prophet',
+    short:
+      'Prognosemodell, ursprünglich von Facebook (heute Meta) entwickelt. Es setzt eine Trendlinie mit einem Wochenmuster und einem Jahresmuster zusammen.',
+    more: 'Wochen- und Jahresmuster sind bei uns ausdrücklich eingeschaltet. Prophet würde den Jahresrhythmus bei weniger als zwei Jahren Trainingsdaten sonst abschalten. Alle übrigen Einstellungen sind Prophets Voreinstellung. Feiertage und Ereignisse wurden in dieser Auswertung nicht verwendet, auch wenn Prophet sie grundsätzlich berücksichtigen kann.',
+  },
+  'GBM rekursiv': {
+    label: 'GBM rekursiv',
+    short:
+      'Maschinelles Lernen mit vielen kleinen Entscheidungsbäumen (Gradient Boosting). Es schaut auf die Werte von vor 1, 7, 14 und 28 Tagen sowie auf Wochentag, Monat und Tag im Jahr.',
+    more: 'Es sagt Tag für Tag voraus und nutzt jede eigene Prognose als Eingabe für den nächsten Tag (rekursiv). Bei langen Horizonten können sich Fehler dadurch aufsummieren. Technisch: HistGradientBoostingRegressor aus scikit-learn.',
+  },
+  'GBM Kalender': {
+    label: 'GBM Kalender',
+    short:
+      'Dasselbe Verfahren, aber ohne die letzten Messwerte: Es kennt nur den Kalender, nämlich Wochentag, Monat und Tag im Jahr.',
+    more: 'Weil keine Werte der Vortage nötig sind, baut sich kein Fehler über den Horizont auf. Das Modell zeigt, wie viel der Kalender allein erklärt. Technisch: HistGradientBoostingRegressor aus scikit-learn.',
+  },
+}
+
+export const TERMS: Record<string, Term> = {
+  mae: {
+    title: 'MAE: mittlerer Prognosefehler',
+    short:
+      'Wir vergleichen die vorhergesagten Werte mit den tatsächlich gemessenen. Der MAE ist der durchschnittliche Abstand dazwischen, in µg/m³. Ein Wert von 7,6 heißt: Die Prognose liegt im Schnitt um 7,6 µg/m³ daneben. Kleiner ist besser.',
+    more: 'Mittelwert der absoluten Abweichungen zwischen Prognose und Messwert (Mean Absolute Error), gemittelt über alle Prognosestarts. Gezählt werden nur Testtage mit tatsächlicher Messung.',
+  },
+  horizon: {
+    title: 'Prognosehorizont',
+    short:
+      'Wie viele Tage im Voraus vorhergesagt wird. „7 T“ heißt: Ab dem Prognosestart werden die nächsten 7 Tage vorhergesagt.',
+    more: 'Der Fehler eines Horizonts ist der Durchschnitt über alle Tage dieses Zeitraums. Bei längeren Prognosezeiträumen können die Vorhersagen schwieriger werden. Die Ergebnisse verschiedener Horizonte sollten deshalb getrennt betrachtet werden.',
+  },
+  method: {
+    title: 'So testen wir',
+    short:
+      'Wir tun so, als würden wir an vielen verschiedenen Tagen eine Prognose machen: Das Modell sieht nur die 365 Tage davor, und wir prüfen die Vorhersage gegen die danach gemessenen Werte. Das wiederholen wir alle 91 Tage ab 2018.',
+    more: 'Jeder Startpunkt heißt Prognosestart. Das Verfahren heißt Rolling-Origin-Cross-Validation. So entsteht ein Durchschnitt über viele Situationen statt eines einzelnen Glückstreffers.',
+  },
+  strict: {
+    title: 'Strenge Auswertung (80 %)',
+    short:
+      'Ein Prognosestart zählt nur, wenn genug Messwerte vorhanden waren. Eine Zelle der Tabelle erscheint nur, wenn mindestens 80 % der Prognosestarts zählen. Das ist unsere Referenz.',
+    more: 'Pro Prognosestart müssen im Trainings- und im Testzeitraum jeweils mindestens 80 % der Tage gemessen sein. Pro Tabellenzelle müssen mindestens 80 % der Prognosestarts diese Bedingung erfüllen. Fehlende Tage im Trainingsfenster werden linear aufgefüllt, zählen dabei aber nicht als gemessen. Im Testzeitraum wird nie aufgefüllt. Die Regel wurde festgelegt, bevor die Ergebnisse bekannt waren.',
+  },
+  relaxed: {
+    title: 'Gelockerte Regel (70 %)',
+    short:
+      'Eine zusätzliche Auswertung mit weniger strengen Anforderungen an die Datenabdeckung. Sie wurde erst nach den ersten Ergebnissen ergänzt und ist deshalb nicht direkt mit der strengen Auswertung vergleichbar.',
+    more: 'Sie liefert zusätzliche Vergleichswerte für Stationen mit mehr Messlücken. Die Schwellen für die Abdeckung im Training, im Test und für den Anteil zählender Prognosestarts liegen bei 70 % statt bei 80 %. Die Regel wurde festgelegt, nachdem die Ergebnisse der strengen Regel bekannt waren, und ersetzt die Hauptauswertung nie.',
+  },
+  final: {
+    title: 'Gegenprobe ab November 2025',
+    short:
+      'Ein einzelner Prognosezeitraum ab dem 2. November 2025, der in keinem der Tests oben vorkam. Er zeigt, wie sich die Modelle bei einem einzigen frischen Start schlagen.',
+    more: 'Weil es nur ein Zeitraum ist, kann das Ergebnis Zufall sein. Es gelten dieselben Auswertungsregeln wie oben, und die Gegenprobe beeinflusst keine Modellwahl.',
+  },
+  na: {
+    title: 'Nicht auswertbar',
+    short:
+      'Für diese Zelle erfüllten zu wenige Prognosestarts die Anforderungen an die Datenabdeckung. Wir zeigen deshalb keinen Wert und setzen keinen Ersatzwert ein.',
+  },
+  best: {
+    title: 'Niedrigster Fehler',
+    short:
+      'Fett und blau hinterlegt ist der niedrigste mittlere Fehler unter den auswertbaren Modellen dieser Spalte. Das ist keine Aussage über statistische Signifikanz.',
+  },
+}
+
+export const UI = {
+  tabHistory: 'Verlauf',
+  tabModels: 'Modelle',
+  loading: 'Daten werden geladen …',
+  loadError: 'Die Daten für diese Station konnten nicht geladen werden.',
+  modelColumn: 'Modell',
+  naCell: 'n. a.',
+  strictTitle: 'Strenge Auswertung (80 %)',
+  relaxedTitle: 'Gelockerte Regel (70 %)',
+  unitLine:
+    'Mittlerer Prognosefehler (MAE) in µg/m³ je Prognosehorizont. Kleiner ist besser.',
+  relaxedWarning:
+    'Zusätzliche Auswertung, nachträglich ergänzt. Sie verlangt weniger Datenabdeckung. Die Ergebnisse sind deshalb nicht direkt mit der strengen Auswertung vergleichbar.',
+  legendBest:
+    'Fett und blau: niedrigster Fehler unter den auswertbaren Modellen. Kein Signifikanztest.',
+  legendNa: 'n. a. = nicht auswertbar',
+  toggleLabel: 'Zusätzlich die gelockerte Regel (70 %) zeigen',
+  toggleHint: 'Nachträglich ergänzt. Die strenge Auswertung bleibt die Referenz.',
+  noStrictTitle: 'Kein strenger Modellvergleich möglich',
+  noStrictHint:
+    'Schalte unten die gelockerte Regel ein, um eine zusätzliche Auswertung zu sehen.',
+  noStrictFinal:
+    'Das betrifft den Vergleich über viele Prognosestarts. Die Gegenprobe ab November 2025 wird davon unabhängig bewertet.',
+  finalTitle: 'Gegenprobe ab November 2025',
+  finalSubtitle: 'ein einzelner Zeitraum',
+  moreLabel: 'Genauer',
+  closeLabel: 'Schließen',
+}
+
+export function horizonLabel(days: number): string {
+  return `${days} T`
+}
+
+export function noStrictBody(maxSharePercent: number): string {
+  return `Je nach Modell und Prognosehorizont erfüllten höchstens ${maxSharePercent} % der Prognosestarts die Anforderungen an die Datenabdeckung. Gefordert sind mindestens 80 %. Deshalb zeigen wir hier keine vergleichbaren Fehlerwerte.`
+}
+
+export function cellTip(counted: number, total: number): string {
+  return `Mittelwert über ${counted} von ${total} Prognosestarts.`
+}
+
+export function naTip(counted: number, total: number): string {
+  return `Nur ${counted} von ${total} Prognosestarts erfüllten die Anforderungen an die Datenabdeckung.`
+}

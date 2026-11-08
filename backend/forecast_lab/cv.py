@@ -9,8 +9,10 @@ from dataclasses import dataclass
 import pandas as pd
 
 CV_START = pd.Timestamp("2018-01-01")      # erster moeglicher Ursprung
-CV_END = pd.Timestamp("2023-01-01")        # CV-Testfenster enden VOR diesem Tag
-FINAL_ORIGIN = pd.Timestamp("2023-01-01")  # einmaliger Abschlusstest
+# Festgelegt am 08.11.2026, vor dem Neulauf: Daten bis 2026-10-31, der Abschlusstest
+# ist wie bisher die letzten 364 Tage der Daten (2025-11-02 bis 2026-10-31).
+FINAL_ORIGIN = pd.Timestamp("2025-11-02")  # einmaliger Abschlusstest
+CV_END = FINAL_ORIGIN                      # CV-Testfenster enden VOR diesem Tag
 HORIZONS = (7, 30, 182, 364)
 TRAIN_DAYS = 365
 STEP_DAYS = 91

@@ -125,10 +125,18 @@ def read_manifest() -> dict:
     block = manifest.get("daten")
     if not isinstance(block, dict):
         raise ExportError("run_manifest.json: missing block 'daten'")
-    for key in ("datei", "sha256"):
-        if not isinstance(block.get(key), str) or not block[key]:
+    for key in ("datei", "sha256", "kalender", "min_stunden_je_tag"):
+        if not block.get(key):
             raise ExportError(f"run_manifest.json: missing key daten.{key}")
-    return block
+    for key in ("start", "ende", "schritt_tage", "trainingsfenster_tage"):
+        if not manifest.get("cv", {}).get(key):
+            raise ExportError(f"run_manifest.json: missing key cv.{key}")
+    for rule in RULES:
+        rule_block = manifest.get("evaluation", {}).get("regeln", {}).get(rule, {})
+        for key in ("test", "train", "share"):
+            if key not in rule_block:
+                raise ExportError(f"run_manifest.json: missing regeln.{rule}.{key}")
+    return manifest
 
 
 def main() -> None:
@@ -285,7 +293,7 @@ def main() -> None:
     for code, station in sorted(data.items()):
         write_json(OUT / f"station_{code}.json", station)
 
-    write_json(OUT / "meta.json", {
+        write_json(OUT / "meta.json", {
         "generated": date.today().isoformat(),
         "models": MODELS,
         "horizons": HORIZONS,
@@ -293,8 +301,24 @@ def main() -> None:
         "final_origin": next(iter(final_origins)),
         "stations": sorted(stations),
         "dataset": {
-            "file": manifest["datei"],
-            "sha256": manifest["sha256"],
+            "file": manifest["daten"]["datei"],
+            "sha256": manifest["daten"]["sha256"],
+            "first_day": manifest["daten"]["kalender"][0],
+            "last_day": manifest["daten"]["kalender"][1],
+            "min_hours_per_day": manifest["daten"]["min_stunden_je_tag"],
+        },
+        "config": {
+            "cv_start": manifest["cv"]["start"],
+            "cv_end": manifest["cv"]["ende"],
+            "step_days": manifest["cv"]["schritt_tage"],
+            "train_days": manifest["cv"]["trainingsfenster_tage"],
+            "thresholds": {
+                rule: {
+                    k: manifest["evaluation"]["regeln"][rule][k]
+                    for k in ("test", "train", "share")
+                }
+                for rule in RULES
+            },
         },
     })
 

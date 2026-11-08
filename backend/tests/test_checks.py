@@ -2,11 +2,12 @@
 from pathlib import Path
 
 import numpy as np
+import pandas as pd
 
 from forecast_lab import cv, data
 from forecast_lab.models import baseline
 
-CSV = Path(__file__).resolve().parents[2] / "data" / "raw" / "london_air_quality_2010_2023_top5_sites.csv"
+CSV = Path(__file__).resolve().parents[2] / "data" / "raw" / "london_air_quality_2010_2026_top5_sites.csv"
 RAW = data.load_raw(str(CSV))
 SERIES = {s: data.daily_series(RAW, s) for s in data.STATIONS}
 
@@ -18,8 +19,39 @@ def test_no_leakage_in_every_fold():
                 tr, te = cv.split(s, f)
                 assert tr.index.max() < f.origin <= te.index.min(), (st, h, f.origin)
                 if not f.final:
-                    assert te.index.max() < cv.CV_END, "CV-Test reicht in 2023"
+                    assert te.index.max() < cv.CV_END, "CV-Test reicht in den Abschlusstest"
                     assert tr.index.max() < cv.CV_END
+
+
+def test_final_window_is_last_364_days_of_data():
+    """Abschlusstest = die letzten 364 Tage der Daten, die CV endet davor."""
+    assert cv.FINAL_ORIGIN + pd.Timedelta(days=363) == pd.Timestamp(data.LAST_DAY)
+    assert cv.CV_END == cv.FINAL_ORIGIN
+
+
+def test_daily_rule_counts_distinct_hours_only():
+    """Ein Tag zaehlt nur mit mindestens MIN_HOURS VERSCHIEDENEN Stunden."""
+    idx_a = pd.date_range("2024-01-01 00:00", periods=17, freq="h")   # 17 Stunden -> NaN
+    idx_b = pd.date_range("2024-01-02 00:00", periods=18, freq="h")   # 18 Stunden -> zaehlt
+    idx_c = pd.date_range("2024-01-03 00:00", periods=10, freq="h")   # 10 Stunden, je doppelt -> NaN
+    df = pd.concat([
+        pd.DataFrame({"datetime": idx_a, "SiteCode": "T", data.POLLUTANT: 10.0}),
+        pd.DataFrame({"datetime": idx_b, "SiteCode": "T", data.POLLUTANT: 20.0}),
+        pd.DataFrame({"datetime": idx_c.append(idx_c), "SiteCode": "T", data.POLLUTANT: 30.0}),
+    ], ignore_index=True)
+    s = data.daily_series(df, "T")
+    assert np.isnan(s.loc[pd.Timestamp("2024-01-01")])
+    assert s.loc[pd.Timestamp("2024-01-02")] == 20.0
+    assert np.isnan(s.loc[pd.Timestamp("2024-01-03")])
+    assert data.daily_series(df, "T", min_hours=1).loc[pd.Timestamp("2024-01-03")] == 30.0
+
+
+def test_daily_series_with_one_hour_minimum_equals_plain_resample():
+    """Mit min_hours=1 gilt die Regel des Kurs-Notebooks (einfaches Tagesmittel)."""
+    kc = RAW[RAW["SiteCode"] == "KC1"].set_index("datetime")[data.POLLUTANT]
+    plain = kc.resample("D").mean().reindex(pd.date_range(data.FIRST_DAY, data.LAST_DAY, freq="D"))
+    ours = data.daily_series(RAW, "KC1", min_hours=1)
+    pd.testing.assert_series_equal(ours, plain, check_names=False, check_freq=False)
 
 
 def test_forecast_independent_of_future_values():
@@ -40,8 +72,9 @@ def test_forecast_independent_of_future_values():
 
 
 def test_imputation_only_inside_train():
-    """Train wird aufgefuellt, Testluecken bleiben Luecken (valid=False)."""
-    s = SERIES["RI2"]
+    """Train wird aufgefuellt, Testluecken bleiben Luecken (valid=False).
+    EA6 ist seit 2026-01-05 geschlossen: der Abschlusstest hat dort sicher Luecken."""
+    s = SERIES["EA6"]
     f = cv.final_fold(364)
     raw_tr, raw_te = cv.split(s, f)
     assert raw_te.isna().sum() > 0, "Testfall braucht Luecken im Test"
@@ -49,19 +82,6 @@ def test_imputation_only_inside_train():
     out = cv.run_fold(s, f, baseline.mean_all)
     assert int(out["valid"].sum()) == int(raw_te.notna().sum())
     assert (out.loc[~out["valid"], "wahr"].isna()).all()
-
-
-def test_kc1_control_matches_notebook():
-    """Kontrolltest: gleicher Split/Imputation wie Notebook (Train < 2023, Test 2023).
-    Referenzen: Mittelwert-MAE 16.57 (Andys Notebook), mean_recent(730)=9.027015697607274."""
-    s = SERIES[data.CONTROL_STATION]
-    train = cv.prepare_train(s[s.index < "2023-01-01"])
-    test = s[s.index >= "2023-01-01"].dropna()
-    assert len(test) == 363
-    m = np.abs(test - train.mean()).mean()
-    r = np.abs(test - train.iloc[-730:].mean()).mean()
-    assert abs(m - 16.57) < 0.005, m
-    assert abs(r - 9.027015697607274) < 1e-9, r
 
 
 def test_sarima_independent_of_future_values():
@@ -129,11 +149,10 @@ def test_judge_fold_rules():
 
 
 def test_aggregate_scores_and_exclusions():
-    import pandas as pd
     from forecast_lab.pipeline import aggregate_scores, exclusions, final_scores
 
     def row(st, i, zaehlt, mae_, final=False, train=1.0):
-        start = pd.Timestamp("2023-01-01") if final else pd.Timestamp("2018-01-01") + pd.Timedelta(days=91 * i)
+        start = cv.FINAL_ORIGIN if final else pd.Timestamp("2018-01-01") + pd.Timedelta(days=91 * i)
         return dict(Station=st, Modell="M", Horizont=7, Ursprung=start.date(), final=final, mae=mae_,
                     zaehlt=zaehlt, grund="" if zaehlt else "Ausschluss", status="ok", gueltige_Tage=7,
                     Tage=7, test_abdeckung=1.0, train_abdeckung=train, konvergiert=None)
@@ -159,7 +178,6 @@ def test_aggregate_scores_and_exclusions():
 
 
 def test_lenient_rule_is_separate_and_labelled():
-    import pandas as pd
     from forecast_lab.pipeline import RULES, aggregate_scores, final_scores, judge_fold
 
     assert "NACHTRAEGLICH" in RULES["gelockert"]["hinweis"]
@@ -177,7 +195,7 @@ def test_lenient_rule_is_separate_and_labelled():
             gueltige_Tage=7, Tage=7, test_abdeckung=t, train_abdeckung=1.0, konvergiert=None)))
     rows.append(judge_fold(dict(
         Station="X", Modell="M", Horizont=7, final=True, mae=3.0, status="ok",
-        Ursprung=pd.Timestamp("2023-01-01").date(), gueltige_Tage=7, Tage=7,
+        Ursprung=cv.FINAL_ORIGIN.date(), gueltige_Tage=7, Tage=7,
         test_abdeckung=0.75, train_abdeckung=1.0, konvergiert=None)))
     f = pd.DataFrame(rows)
 
@@ -188,3 +206,15 @@ def test_lenient_rule_is_separate_and_labelled():
     assert locker["regel"] == "gelockert" and streng["regel"] == "streng"
     assert bool(final_scores(f, "gelockert")["auswertbar"].iloc[0]) is True
     assert bool(final_scores(f, "streng")["auswertbar"].iloc[0]) is False
+
+
+def test_kc1_control_pinned_on_new_data():
+    """Kontrolltest, NEU GESETZT am 08.11.2026 auf der ERG-Datei 2010-2026 (SHA-256 8eceb77c...).
+    Notebook-Logik: gesamte Historie vor dem Abschluss-Ursprung als Train (linear aufgefuellt),
+    Test = Abschlussjahr, nur gemessene Tage. Die alten Werte (16.57 / 9.027) gehoeren zum Zeitraum 2010-2023."""
+    s = SERIES[data.CONTROL_STATION]
+    train = cv.prepare_train(s[s.index < cv.FINAL_ORIGIN])
+    test = s[s.index >= cv.FINAL_ORIGIN].dropna()
+    assert len(test) == 336
+    assert abs(np.abs(test - train.mean()).mean() - 15.080087187570419) < 1e-9
+    assert abs(np.abs(test - train.iloc[-730:].mean()).mean() - 6.970174566252297) < 1e-9

@@ -6,6 +6,8 @@ import {
   type RefObject,
 } from 'react'
 import './App.css'
+import ModelsTab from './ModelsTab'
+import { UI } from './texts'
 
 const MAP_W = 3000
 const MAP_H = 1998
@@ -79,8 +81,8 @@ const STATIONS: Station[] = [
 ]
 
 const TABS: { id: Tab; label: string }[] = [
-  { id: 'history', label: 'History' },
-  { id: 'models', label: 'Models' },
+  { id: 'history', label: UI.tabHistory },
+  { id: 'models', label: UI.tabModels },
 ]
 
 function viewBoxFor(aspect: number): string {
@@ -136,7 +138,7 @@ export default function App() {
           className="board"
           viewBox={viewBoxFor(aspect)}
           role="img"
-          aria-label="Map of central London with five air-quality stations"
+          aria-label="Karte des Londoner Zentrums mit fünf Luftmessstationen"
         >
           <image
             href="/london_map.svg"
@@ -229,7 +231,7 @@ export default function App() {
         </div>
       </div>
 
-      <aside className="panel" aria-label="Station details">
+      <aside className="panel" aria-label="Stationsdetails">
         {selected && (
           <>
             <header className="panel-head">
@@ -244,7 +246,7 @@ export default function App() {
               <button
                 className="panel-close"
                 onClick={() => setSelected(null)}
-                aria-label="Close station details"
+                aria-label="Stationsdetails schließen"
               >
                 ×
               </button>
@@ -265,20 +267,17 @@ export default function App() {
             </div>
 
             <div className="panel-body">
+              {tab === 'models' ? (
+                <ModelsTab code={selected.code} />
+              ) : (
               <div className="placeholder">
-                <span className="placeholder-tag">Placeholder</span>
-                {tab === 'history' ? (
-                  <p>
-                    The measured NO₂ series for station {selected.code} will
-                    appear here, with data gaps marked.
-                  </p>
-                ) : (
-                  <p>
-                    The model comparison for station {selected.code} will
-                    appear here: error per model and forecast horizon.
-                  </p>
-                )}
+                <span className="placeholder-tag">Folgt</span>
+                <p>
+                  Der gemessene NO₂-Verlauf der Station {selected.code} wird
+                  hier erscheinen, mit markierten Datenlücken.
+                </p>
               </div>
+              )}
             </div>
           </>
         )}

@@ -56,7 +56,7 @@ RULES = {
 # share: Mindestanteil zaehlender Folds je Station/Modell/Horizont
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]   # .../london-no2-forecasting
-DEFAULT_CSV = PROJECT_ROOT / "data" / "raw" / "london_air_quality_2010_2023_top5_sites.csv"
+DEFAULT_CSV = PROJECT_ROOT / "data" / "raw" / "london_air_quality_2010_2026_top5_sites.csv"
 DEFAULT_OUT = PROJECT_ROOT / "results"
 
 MODEL_FACTORIES = {
@@ -225,7 +225,10 @@ def build_manifest(csv_path, stations, horizons, model_names, folds, times, daue
         daten=dict(datei=Path(csv_path).name, sha256=_sha256(csv_path),
                    groesse_bytes=os.path.getsize(csv_path), schadstoff=data.POLLUTANT,
                    kalender=[data.FIRST_DAY, data.LAST_DAY],
-                   aggregation="Tagesmittel (resample D, mean), fehlende Tage bleiben NaN"),
+                   quelle="ERG-Schnittstelle (api.erg.ic.ac.uk), Abruf siehe tools/fetch_erg_data.py",
+                   min_stunden_je_tag=data.MIN_HOURS,
+                   aggregation="Tagesmittel aus stuendlichen Werten; ein Tag zaehlt nur mit "
+                               "mindestens min_stunden_je_tag verschiedenen Stunden, sonst NaN"),
         stationen=list(stations), horizonte=list(horizons),
         cv=dict(start=str(cv.CV_START.date()), ende=str(cv.CV_END.date()),
                 schritt_tage=cv.STEP_DAYS, trainingsfenster_tage=cv.TRAIN_DAYS,
@@ -233,7 +236,8 @@ def build_manifest(csv_path, stations, horizons, model_names, folds, times, daue
         evaluation=dict(
             metrik="MAE auf tatsaechlich gemessenen Testtagen",
             imputation="linear, nur innerhalb des Trainingsfensters; Raender ffill/bfill; nie im Test",
-            abdeckung_bedeutet="Anteil tatsaechlich gemessener Tage, interpolierte zaehlen nicht",
+            abdeckung_bedeutet="Anteil Tage mit gueltigem Tagesmittel (mindestens min_stunden_je_tag "
+                               "verschiedene Stunden), interpolierte Tage zaehlen nie",
             hauptauswertung="streng",
             regeln=RULES),
         modelle={n: model_params(MODEL_FACTORIES[n]()) for n in model_names},
