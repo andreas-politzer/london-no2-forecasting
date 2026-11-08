@@ -8,7 +8,9 @@ Time series, played seriously. Five air-quality stations in London, daily NO₂ 
 
 NO₂ (nitrogen dioxide) is a traffic-related air pollutant. The data is real and messy: gaps, seasons, a pandemic year, a station that closed. That mess is what makes the model comparison worth doing.
 
-> Work in progress. The forecasting engine is done and tested, and the explorer (React + TypeScript, hosted on GitHub Pages) shows the model comparison for every station. A tab with the measured time series is still to come.
+The explorer (React + TypeScript, hosted on GitHub Pages, interface in German) has three tabs. **Prognose** replays every model's forecast against what was really measured, and shows a one-year outlook from the latest data; that outlook can only be checked once the year has passed. **Modelle** compares the models with cross-validation scores. **Verlauf** shows the measured series per station.
+
+Possible next steps: public holidays, the COVID period, the ULEZ, weather.
 
 ## What is in here
 
