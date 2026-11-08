@@ -24,8 +24,22 @@ body {
   width: 100vw;
   height: 100dvh;
   overflow: hidden;
-  container-type: inline-size;
   background: var(--panel);
+}
+
+.app.open {
+  --panel-w: min(460px, 42vw);
+}
+
+.map-area {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: var(--panel-w, 0px);
+  overflow: hidden;
+  container-type: inline-size;
+  transition: right 0.25s ease;
 }
 
 .board {
@@ -112,4 +126,113 @@ body {
   background: rgba(255, 255, 255, 0.85);
   padding: 3px 8px;
   border-radius: 4px;
+}
+
+.panel {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(460px, 42vw);
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  border-left: 1px solid var(--line);
+  box-shadow: -12px 0 32px rgba(15, 23, 42, 0.1);
+  transform: translateX(100%);
+  transition: transform 0.25s ease;
+}
+
+.app.open .panel {
+  transform: none;
+}
+
+.panel-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 20px 20px 12px;
+}
+
+.panel-title {
+  margin: 0;
+  font-family: var(--sign-font);
+  font-weight: 700;
+  font-size: 1.9rem;
+  line-height: 1.1;
+  letter-spacing: 0.01em;
+}
+
+.panel-sub {
+  margin: 4px 0 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.panel-close {
+  border: 0;
+  background: none;
+  font-size: 1.8rem;
+  line-height: 1;
+  padding: 0 4px;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.panel-close:hover {
+  color: var(--ink);
+}
+
+.tabs {
+  display: flex;
+  gap: 4px;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.tab {
+  border: 0;
+  background: none;
+  padding: 10px 12px;
+  font: inherit;
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--muted);
+  border-bottom: 3px solid transparent;
+  cursor: pointer;
+}
+
+.tab[aria-selected='true'] {
+  color: var(--ink);
+  border-bottom-color: var(--red);
+}
+
+.panel-body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 16px 20px 24px;
+}
+
+.placeholder {
+  display: grid;
+  gap: 8px;
+  padding: 16px;
+  border: 2px dashed var(--line);
+  border-radius: 12px;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.placeholder-tag {
+  justify-self: start;
+  padding: 2px 8px;
+  border: 1.5px solid var(--red);
+  border-radius: 4px;
+  color: var(--red);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }

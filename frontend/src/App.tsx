@@ -1,4 +1,10 @@
-import { useEffect, useState } from 'react'
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type RefObject,
+} from 'react'
 import './App.css'
 
 const MAP_W = 3000
@@ -14,12 +20,19 @@ type Station = {
   y: number
 }
 
+type Tab = 'history' | 'models'
+
 const STATIONS: Station[] = [
   { code: 'EA6', lat: 51.5309, lon: -0.2925, x: 265, y: 350 },
   { code: 'KC1', lat: 51.521, lon: -0.2135, x: 1435, y: 585 },
   { code: 'MY1', lat: 51.5225, lon: -0.1546, x: 2307, y: 549 },
   { code: 'BL0', lat: 51.5223, lon: -0.1258, x: 2733, y: 554 },
   { code: 'RI2', lat: 51.4762, lon: -0.2304, x: 1185, y: 1651 },
+]
+
+const TABS: { id: Tab; label: string }[] = [
+  { id: 'history', label: 'History' },
+  { id: 'models', label: 'Models' },
 ]
 
 function viewBoxFor(aspect: number): string {
@@ -38,113 +51,189 @@ function viewBoxFor(aspect: number): string {
   return `${x} ${y} ${w} ${h}`
 }
 
-function useAspect(): number {
-  const [aspect, setAspect] = useState(
-    () => window.innerWidth / window.innerHeight,
-  )
-  useEffect(() => {
-    const onResize = () => setAspect(window.innerWidth / window.innerHeight)
-    window.addEventListener('resize', onResize)
-    return () => window.removeEventListener('resize', onResize)
-  }, [])
+function useAspect(ref: RefObject<HTMLElement | null>): number {
+  const [aspect, setAspect] = useState(16 / 9)
+  useLayoutEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const update = () => {
+      if (el.clientHeight > 0) setAspect(el.clientWidth / el.clientHeight)
+    }
+    update()
+    const observer = new ResizeObserver(update)
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [ref])
   return aspect
 }
 
 export default function App() {
   const [selected, setSelected] = useState<Station | null>(null)
-  const aspect = useAspect()
+  const [tab, setTab] = useState<Tab>('history')
+  const mapRef = useRef<HTMLDivElement>(null)
+  const aspect = useAspect(mapRef)
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setSelected(null)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
 
   return (
-    <div className="app">
-      <svg
-        className="board"
-        viewBox={viewBoxFor(aspect)}
-        role="img"
-        aria-label="Map of central London with five air-quality stations"
-      >
-        <image href="/london_map.svg" x={0} y={0} width={MAP_W} height={MAP_H} />
-        {STATIONS.map((s) => (
-          <g
-            key={s.code}
-            className={`station${selected?.code === s.code ? ' selected' : ''}`}
-            transform={`translate(${s.x} ${s.y})`}
-            role="button"
-            tabIndex={0}
-            aria-label={`Station ${s.code}`}
-            onClick={() => setSelected(s)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') setSelected(s)
-            }}
-          >
-            <ellipse
-              className="ring"
-              cx={0}
-              cy={-4}
-              rx={78}
-              ry={26}
-              fill="none"
-              stroke="#c23b2e"
-              strokeWidth={9}
-              opacity={0}
-            />
-            <ellipse cx={6} cy={4} rx={52} ry={14} fill="rgba(0,0,0,0.3)" />
-            <g className="lift">
-              <g transform="scale(1.55)">
-                <path
-                  className="pawn-fill"
-                  d="M-26 0C-26 -16 -14 -26 -9 -52H9C14 -26 26 -16 26 0Z"
-                  stroke="#ffffff"
-                  strokeWidth={3}
-                />
-                <ellipse cx={0} cy={-52} rx={16} ry={5} fill="#ffffff" />
-                <circle
-                  className="pawn-fill"
-                  cx={0}
-                  cy={-70}
-                  r={19}
-                  stroke="#ffffff"
-                  strokeWidth={3}
-                />
-                <rect
-                  x={-34}
-                  y={-128}
-                  width={68}
-                  height={34}
-                  rx={8}
-                  fill="#ffffff"
-                  stroke="#1d2a4a"
-                  strokeWidth={3}
-                />
-                <text
-                  x={0}
-                  y={-104}
-                  textAnchor="middle"
-                  fontFamily="'Barlow Semi Condensed', 'Arial Narrow', sans-serif"
-                  fontWeight={700}
-                  fontSize={25}
-                  fill="#1d2a4a"
-                >
-                  {s.code}
-                </text>
+    <div className={`app${selected ? ' open' : ''}`}>
+      <div className="map-area" ref={mapRef}>
+        <svg
+          className="board"
+          viewBox={viewBoxFor(aspect)}
+          role="img"
+          aria-label="Map of central London with five air-quality stations"
+        >
+          <image
+            href="/london_map.svg"
+            x={0}
+            y={0}
+            width={MAP_W}
+            height={MAP_H}
+          />
+          {STATIONS.map((s) => (
+            <g
+              key={s.code}
+              className={`station${selected?.code === s.code ? ' selected' : ''}`}
+              transform={`translate(${s.x} ${s.y})`}
+              role="button"
+              tabIndex={0}
+              aria-label={`Station ${s.code}`}
+              onClick={() => setSelected(s)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') setSelected(s)
+              }}
+            >
+              <ellipse
+                className="ring"
+                cx={0}
+                cy={-4}
+                rx={78}
+                ry={26}
+                fill="none"
+                stroke="#c23b2e"
+                strokeWidth={9}
+                opacity={0}
+              />
+              <ellipse cx={6} cy={4} rx={52} ry={14} fill="rgba(0,0,0,0.3)" />
+              <g className="lift">
+                <g transform="scale(1.55)">
+                  <path
+                    className="pawn-fill"
+                    d="M-26 0C-26 -16 -14 -26 -9 -52H9C14 -26 26 -16 26 0Z"
+                    stroke="#ffffff"
+                    strokeWidth={3}
+                  />
+                  <ellipse cx={0} cy={-52} rx={16} ry={5} fill="#ffffff" />
+                  <circle
+                    className="pawn-fill"
+                    cx={0}
+                    cy={-70}
+                    r={19}
+                    stroke="#ffffff"
+                    strokeWidth={3}
+                  />
+                  <rect
+                    x={-34}
+                    y={-128}
+                    width={68}
+                    height={34}
+                    rx={8}
+                    fill="#ffffff"
+                    stroke="#1d2a4a"
+                    strokeWidth={3}
+                  />
+                  <text
+                    x={0}
+                    y={-104}
+                    textAnchor="middle"
+                    fontFamily="'Barlow Semi Condensed', 'Arial Narrow', sans-serif"
+                    fontWeight={700}
+                    fontSize={25}
+                    fill="#1d2a4a"
+                  >
+                    {s.code}
+                  </text>
+                </g>
               </g>
             </g>
-          </g>
-        ))}
-      </svg>
+          ))}
+        </svg>
 
-      <div className="sign" aria-hidden="true">
-        <div className="pc">N1 · Air quality</div>
-        <div className="nm">
-          London NO₂
-          <br />
-          Forecasting
+        <div className="sign" aria-hidden="true">
+          <div className="pc">N1 · Air quality</div>
+          <div className="nm">
+            London NO₂
+            <br />
+            Forecasting
+          </div>
+        </div>
+
+        <div className="attr">
+          Map © OpenStreetMap contributors (ODbL) · Data: London Air Quality
+          Network, Imperial College London
         </div>
       </div>
 
-      <div className="attr">
-        Map © OpenStreetMap contributors (ODbL) · Data: London Air Quality
-        Network, Imperial College London
-      </div>
+      <aside className="panel" aria-label="Station details">
+        {selected && (
+          <>
+            <header className="panel-head">
+              <div>
+                <h2 className="panel-title">Station {selected.code}</h2>
+                <p className="panel-sub">
+                  {selected.lat.toFixed(4)}° N,{' '}
+                  {Math.abs(selected.lon).toFixed(4)}° W
+                </p>
+              </div>
+              <button
+                className="panel-close"
+                onClick={() => setSelected(null)}
+                aria-label="Close station details"
+              >
+                ×
+              </button>
+            </header>
+
+            <div className="tabs" role="tablist">
+              {TABS.map((t) => (
+                <button
+                  key={t.id}
+                  className="tab"
+                  role="tab"
+                  aria-selected={tab === t.id}
+                  onClick={() => setTab(t.id)}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="panel-body">
+              <div className="placeholder">
+                <span className="placeholder-tag">Placeholder</span>
+                {tab === 'history' ? (
+                  <p>
+                    The measured NO₂ series for station {selected.code} will
+                    appear here, with data gaps marked.
+                  </p>
+                ) : (
+                  <p>
+                    The model comparison for station {selected.code} will
+                    appear here: error per model and forecast horizon.
+                  </p>
+                )}
+              </div>
+            </div>
+          </>
+        )}
+      </aside>
     </div>
   )
 }
