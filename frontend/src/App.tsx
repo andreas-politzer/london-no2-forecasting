@@ -81,8 +81,8 @@ const STATIONS: Station[] = [
 ]
 
 const TABS: { id: Tab; label: string }[] = [
-  { id: 'history', label: UI.tabHistory },
   { id: 'models', label: UI.tabModels },
+  { id: 'history', label: UI.tabHistory },
 ]
 
 function viewBoxFor(aspect: number): string {
@@ -119,13 +119,17 @@ function useAspect(ref: RefObject<HTMLElement | null>): number {
 
 export default function App() {
   const [selected, setSelected] = useState<Station | null>(null)
-  const [tab, setTab] = useState<Tab>('history')
+  const [tab, setTab] = useState<Tab>('models')
+  const [showSources, setShowSources] = useState(false)
   const mapRef = useRef<HTMLDivElement>(null)
   const aspect = useAspect(mapRef)
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setSelected(null)
+      if (e.key === 'Escape') {
+        setSelected(null)
+        setShowSources(false)
+      }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
@@ -141,7 +145,7 @@ export default function App() {
           aria-label="Karte des Londoner Zentrums mit fünf Luftmessstationen"
         >
           <image
-            href="/london_map.svg"
+            href={`${import.meta.env.BASE_URL}london_map.svg`}
             x={0}
             y={0}
             width={MAP_W}
@@ -225,9 +229,44 @@ export default function App() {
           </div>
         </div>
 
-        <div className="attr">
-          Map © OpenStreetMap contributors (ODbL) · Data: London Air Quality
-          Network, Imperial College London
+        <button
+          type="button"
+          className="attr-btn"
+          aria-expanded={showSources}
+          onClick={() => setShowSources((open) => !open)}
+        >
+          Quellen &amp; Lizenzen
+        </button>
+        <div className="attr" hidden={!showSources}>
+          Map ©{' '}
+          <a
+            href="https://www.openstreetmap.org/copyright"
+            target="_blank"
+            rel="noreferrer"
+          >
+            OpenStreetMap contributors
+          </a>{' '}
+          (ODbL). This information has been obtained from the{' '}
+          <a
+            href="https://www.imperial.ac.uk/school-public-health/environmental-research-group/"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Environmental Research Group of Imperial College London
+          </a>
+          , using data from the{' '}
+          <a href="https://www.londonair.org.uk" target="_blank" rel="noreferrer">
+            London Air Quality Network
+          </a>
+          . This information is licensed under the terms of the{' '}
+          <a
+            href="https://www.nationalarchives.gov.uk/doc/open-government-licence/version/2/"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Open Government Licence
+          </a>
+          .
         </div>
       </div>
 

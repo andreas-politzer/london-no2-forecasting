@@ -115,17 +115,46 @@ body {
   color: var(--navy);
 }
 
-.attr {
+.attr-btn {
   position: absolute;
   left: 16px;
   bottom: 12px;
-  max-width: calc(100% - 32px);
+  z-index: 5;
+  padding: 3px 8px;
+  border: 0;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.85);
+  color: #334155;
+  font-family: var(--ui-font);
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.attr-btn:hover,
+.attr-btn[aria-expanded='true'] {
+  background: #ffffff;
+}
+
+.attr a {
+  color: inherit;
+  text-decoration: underline;
+}
+
+.attr {
+  position: absolute;
+  left: 16px;
+  bottom: 46px;
+  z-index: 5;
+  width: min(420px, calc(100% - 32px));
+  line-height: 1.4;
   font-family: var(--ui-font);
   font-size: 11px;
   color: #334155;
-  background: rgba(255, 255, 255, 0.85);
-  padding: 3px 8px;
-  border-radius: 4px;
+  background: var(--bg);
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.2);
 }
 
 .panel {

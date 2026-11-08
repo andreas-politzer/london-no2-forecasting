@@ -2,11 +2,13 @@
 
 ![Hand-built map of central London with the five air-quality stations](assets/london_map.svg)
 
-Time series, played seriously. Five air-quality stations in London, daily NO₂ readings from 2010 to 2023, and six forecasting models, from a plain average to SARIMA, Prophet and gradient boosting, compared fairly with time-based cross-validation. The stations sit on a hand-drawn board-game map of London, built from OpenStreetMap data, because a comparison of models should at least be nice to look at.
+**Live explorer: <https://andreas-politzer.github.io/london-no2-forecasting/>**
 
-NO₂ (nitrogen dioxide) is a traffic-related air pollutant. The data is real and messy: gaps, seasons, a pandemic year. That mess is what makes the model comparison worth doing.
+Time series, played seriously. Five air-quality stations in London, daily NO₂ readings from 1 January 2010 to 31 October 2026, and six forecasting models, from a plain average to SARIMA, Prophet and gradient boosting, compared fairly with time-based cross-validation. The stations sit on a hand-drawn board-game map of London, built from OpenStreetMap data, because a comparison of models should at least be nice to look at.
 
-> Work in progress. The forecasting engine is done and tested. The interactive explorer (React + TypeScript, hosted on GitHub Pages) is being built.
+NO₂ (nitrogen dioxide) is a traffic-related air pollutant. The data is real and messy: gaps, seasons, a pandemic year, a station that closed. That mess is what makes the model comparison worth doing.
+
+> Work in progress. The forecasting engine is done and tested, and the explorer (React + TypeScript, hosted on GitHub Pages) shows the model comparison for every station. A tab with the measured time series is still to come.
 
 ## What is in here
 
@@ -19,21 +21,26 @@ NO₂ (nitrogen dioxide) is a traffic-related air pollutant. The data is real an
 | SARIMA | Classical statistical model, (1,0,1)(1,0,1,7) with a constant trend |
 | Prophet | Trend plus weekly and yearly seasonality, both switched on explicitly |
 | Gradient boosting (recursive) | scikit-learn `HistGradientBoostingRegressor` on lag features (1, 7, 14, 28 days) plus calendar features |
-| Gradient boosting (calendar) | Same estimator, calendar features only |
+| Gradient boosting (calendar) | Same estimator, calendar features only (weekday, month, day of year) |
 
-**Validation.** Rolling-origin cross-validation: the first forecast origin is 2018-01-01, a new origin follows every 91 days, each model trains on the 365 days before its origin and forecasts 7, 30, 182 or 364 days ahead. Training windows end strictly before the origin, and gaps are only filled inside the training window. The cross-validation windows end before 2023-01-01. **A separate, one-time final test starts at 2023-01-01** and is reported on its own, never mixed with the cross-validation.
+No model uses holidays, weather or other outside information. Those are deliberately left for later.
 
-**Evaluation rule, fixed before looking at results.** A fold counts only if at least 80 % of the days in its training window and at least 80 % of the days in its test window are really measured values (interpolated days never count). A station and horizon gets a score only if at least 80 % of its folds count; otherwise it is shown as "not evaluable", with the reason. A looser variant (70 % on all three thresholds) was added after the first run. It is **labelled as post hoc**, written to separate files, and never replaces the main evaluation.
+**Data.** Hourly NO₂ values per station come from the Environmental Research Group (Imperial College London) interface to the London Air Quality Network. A day counts as measured only if it has at least 18 *distinct* hourly values, so duplicated timestamps can never raise the coverage. Everything else is a gap. Timestamps are GMT, as delivered by the interface; daily means are taken over GMT days, not London local days.
 
-**Checks.** Automatic tests for data leakage in every fold, for forecasts that must not change when future values are tampered with, and a control against known reference values.
+**Validation.** Rolling-origin cross-validation: the first forecast origin is 2018-01-01, a new origin follows every 91 days, each model trains on the 365 days before its origin and forecasts 7, 30, 182 or 364 days ahead. Training windows end strictly before the origin, and gaps are only filled inside the training window. The cross-validation windows end before 2025-11-02. **A separate, one-time final test covers the last 364 days of data, starting at 2025-11-02,** and is reported on its own, never mixed with the cross-validation. Only days that were actually measured count, and the same coverage rules apply. Not every station covers the whole window: EA6 stops on 5 January 2026 and BL0 on 3 October 2026, so their final-test scores rest on fewer days, or may come out as "not evaluable".
+
+**Evaluation rule, fixed before looking at results.** A fold counts only if at least 80 % of the days in its training window and at least 80 % of the days in its test window are really measured values (interpolated days never count). A station and horizon gets a score only if at least 80 % of its folds count; otherwise it is shown as "not evaluable", with the reason. A looser variant (70 % on all three thresholds) was added after the first results. It is **labelled as post hoc**, written to separate files, and never replaces the main evaluation. The period, the 18-hour day rule and the final test window were also fixed before the new results were seen.
+
+**Checks.** Thirteen automatic tests: no data leakage in any fold, forecasts that must not change when future values are tampered with (for every model family), the day rule with duplicated timestamps, the final window, the evaluation and exclusion logic, and a control against reference values computed with the course notebook's logic.
 
 ## First results
 
-The main metric is the mean absolute error (MAE, in µg/m³), averaged over the folds. "Ahead" below means the lowest mean MAE. There is no significance testing yet.
+The main metric is the mean absolute error (MAE, in µg/m³), averaged over the folds. "Lowest" below means the lowest mean MAE. There is no significance testing yet.
 
-- Under the strict rule only KC1 and MY1 are evaluable at every horizon. EA6 is evaluable at 7 and 30 days, BL0 and RI2 never are. RI2 has a real gap in its data from mid-2021 to early 2023.
-- Where a score exists for KC1 and MY1, SARIMA is ahead in 5 of 8 station/horizon cases.
-- At long horizons the plain mean is hard to beat, and Prophet is mostly the weakest.
+- Under the strict rule only KC1 and MY1 are evaluable, at all four horizons. EA6 misses the 80 % mark narrowly (between about 71 % and 78 % of folds count, depending on the horizon). BL0 and RI2 stay "not evaluable". Under the post hoc 70 % rule EA6 becomes evaluable everywhere and BL0 at 364 days; RI2 never does.
+- SARIMA has the lowest error in 6 of the 8 evaluable station/horizon cases: KC1 at 7 and 30 days, and MY1 at all four horizons. At 7 days, for example, SARIMA reaches 6.7 µg/m³ at KC1 against 8.2 for the plain mean, and 13.9 against 16.0 at MY1.
+- At KC1 with 182 and 364 days, calendar-only gradient boosting is marginally ahead, and the three best models lie within about 0.6 µg/m³ of each other.
+- Prophet has the highest error in 5 of the 8 cases.
 
 Read this as a first look, not a verdict. The models are untuned and the cross-validation covers a limited period.
 
@@ -47,30 +54,49 @@ source .venv/bin/activate
 pip install -r backend/requirements.txt
 ```
 
-Put the dataset `london_air_quality_2010_2023_top5_sites.csv` into `data/raw/`. It contains daily NO₂ values for the five stations and was provided as part of a data-science course; the underlying measurements come from the London Air Quality Network (see below). The raw data is not included in this repository. The file used here is about 69 MB, and its SHA-256 checksum starts with `a2902d5c`, so you can check that you hold the same version. The retrieval date is unknown.
+Download the data (about 670,000 hourly rows, cached per station and month in `data/raw/erg_cache`, so a second run is quick):
+
+```bash
+python tools/fetch_erg_data.py
+```
+
+The raw data is not part of this repository. The file used for the published results is `london_air_quality_2010_2026_top5_sites.csv` (about 72 MB), data as of 8 November 2026, with SHA-256 checksum `8eceb77ca87790faf2528461065bace8af0ce9613d95ae4c44ff40b98ec657d2`. The upstream service can revise past values, so a later download may differ slightly from this checksum.
 
 ```bash
 cd backend
 python -m pytest tests -q
 OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 python -m forecast_lab.pipeline
+cd ..
 ```
 
-The full run takes about 40 seconds on a laptop. The thread variables matter: without them the models compete for CPU cores and the run can be many times slower. Results go to `results/`, together with a manifest that records versions, configuration and git state.
+The full run takes about a minute on a laptop. The thread variables matter: without them the models compete for CPU cores and the run can be many times slower. Results go to `results/`, together with a manifest that records versions, configuration, data checksum and git state.
 
-Rebuild the map (needs internet access to OpenStreetMap's Overpass service; downloads are cached in `data/raw/osm`):
+Export the results for the explorer and start it locally (from the repository root):
+
+```bash
+python tools/export_frontend_data.py
+cd frontend
+npm ci
+npm run dev
+```
+
+Rebuild the map (from the repository root; needs internet access to OpenStreetMap's Overpass service; downloads are cached in `data/raw/osm`):
 
 ```bash
 python tools/build_map.py
 ```
 
+An earlier analysis on the course dataset (2010–2023) is kept as the git tag `stand-2010-2023`.
+
 ## Limits
 
-- Five stations are not a sample of London, and their data coverage differs a lot. RI2 in particular has a long measurement gap.
+- Five stations are not a sample of London, and their data coverage differs a lot. BL0 has no data between September 2023 and February 2025, EA6 closed on 5 January 2026, and RI2 is only nearly complete from 2025, with long gaps before that.
 - No model tuning yet: default settings on purpose.
 - The training window is 365 days. That is short for yearly patterns, which is why Prophet is a rough fit here.
-- One final test year (2023) and a limited cross-validation period.
+- One final test window and a limited cross-validation period.
 
 ## Data and attribution
 
+- Air-quality data: This information has been obtained from the [Environmental Research Group of Imperial College London](https://www.imperial.ac.uk/school-public-health/environmental-research-group/), using data from the [London Air Quality Network](https://www.londonair.org.uk). This information is licensed under the terms of the [Open Government Licence](https://www.nationalarchives.gov.uk/doc/open-government-licence/version/2/).
 - Map data: © [OpenStreetMap contributors](https://www.openstreetmap.org/copyright), available under the Open Database Licence (ODbL). The map in `assets/` is a derived work drawn from that data.
-- Air-quality data: London Air Quality Network (LAQN), Environmental Research Group, Imperial College London. The raw data is not redistributed
+- The code is released under the MIT licence (see `LICENSE`).
