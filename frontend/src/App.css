@@ -621,3 +621,138 @@ body {
   font-weight: 600;
   color: var(--navy);
 }
+
+/* ---- Prognose-Tab ---- */
+.pg-modes {
+  display: inline-flex;
+  justify-self: start;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--panel);
+}
+
+.pg-mode {
+  padding: 6px 14px;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.pg-mode.on {
+  background: var(--bg);
+  color: var(--ink);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.15);
+}
+
+.pg-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.pg-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--bg);
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  opacity: 0.55;
+  cursor: pointer;
+}
+
+.pg-chip.on {
+  border-color: #94a3b8;
+  color: var(--ink);
+  opacity: 1;
+}
+
+.pg-swatch {
+  display: inline-block;
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.score-table .pg-swatch {
+  margin-right: 6px;
+}
+
+.pg-line {
+  fill: none;
+  stroke-width: 1.6;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  opacity: 0.9;
+}
+
+.pg-truth {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.pg-readout {
+  min-height: 6em;
+  font-size: 0.85rem;
+}
+
+.pg-readout ul {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 2px 12px;
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pg-readout li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pg-slider {
+  display: grid;
+  gap: 4px;
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.pg-slider input {
+  width: 100%;
+}
+
+.pg-start {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: var(--navy);
+}
+
+.pg-badge {
+  padding: 1px 8px;
+  border: 1.5px solid var(--navy);
+  border-radius: 4px;
+  color: var(--navy);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}

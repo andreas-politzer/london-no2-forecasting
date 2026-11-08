@@ -220,3 +220,59 @@ export function historyReadout(
   }
   return `${monthLabel(yearMonth)}: ${oneDecimal.format(mean)} µg/m³, ${days} von ${daysInMonth} Tagen gemessen`
 }
+
+export function formatDay(iso: string): string {
+  return germanDate(iso)
+}
+
+const WEEKDAYS = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa']
+
+export function weekdayDate(iso: string): string {
+  const weekday = WEEKDAYS[new Date(`${iso}T00:00:00Z`).getUTCDay()]
+  return `${weekday}, ${germanDate(iso)}`
+}
+
+export const PG = {
+  tab: 'Prognose',
+  modeOutlook: 'Ausblick',
+  modeBacktest: 'Rückblick',
+  outlookTitle: 'So könnte das nächste Jahr aussehen',
+  backtestTitle: 'Wie gut hätten die Modelle richtig gelegen?',
+  backtestIntro:
+    'Wähle einen Prognosestart in der Vergangenheit. Jedes Modell sieht nur die 365 Tage davor und sagt die folgenden Tage voraus. Die dunkle Linie zeigt, was tatsächlich gemessen wurde.',
+  outlookNote:
+    'Die Modelle sind ungetunt und können danebenliegen. Die Linien zeigen nur, was jedes Modell aus den letzten 365 Tagen fortschreibt. Das ist keine amtliche Vorhersage.',
+  horizonLabel: 'Prognosehorizont',
+  startLabel: 'Prognosestart',
+  finalBadge: 'Gegenprobe',
+  modelsLabel: 'Modelle',
+  measured: 'Gemessen',
+  hint: 'Mit dem Finger oder der Maus über die Grafik fahren, um einzelne Tage zu sehen.',
+  tableModel: 'Modell',
+  tableError: 'Ø Fehler in µg/m³',
+  tableLevel: 'Ø Prognose in µg/m³',
+  tableErrorNote:
+    'Mittlerer Abstand zur Messung, nur an gemessenen Tagen. Kleiner ist besser. Fett: niedrigster angezeigter Wert.',
+  tableLevelNote: 'Durchschnitt der Prognose über die gesamten 364 Tage.',
+  unavailableTitle: 'Für diese Station gibt es keine Prognose',
+  unavailableBody:
+    'Die Messreihe vor dem Prognosestart ist zu lückenhaft, um ein Modell sinnvoll zu trainieren. Wir füllen keine Lücken auf, um trotzdem eine Linie zu zeigen.',
+  noStarts: 'Für diese Station gibt es zu diesem Horizont keine Rückblick-Prognosen.',
+  line: 'Linie',
+}
+
+export function horizonDays(days: number): string {
+  return `${days} Tage`
+}
+
+export function outlookIntro(origin: string, dataUntil: string): string {
+  return `Jedes Modell blickt auf die 365 Tage bis zum ${germanDate(dataUntil)} und schreibt daraus die nächsten 364 Tage ab dem ${germanDate(origin)} fort. Das ist eine echte Prognose: Ob sie stimmt, lässt sich erst in einem Jahr überprüfen.`
+}
+
+export function coverageNote(valid: number, total: number): string {
+  const percent = Math.round((valid / total) * 100)
+  const base = `An ${valid} von ${total} Tagen gemessen (${percent} %).`
+  return percent < 80
+    ? `${base} In der Gesamtauswertung würde dieser Start deshalb nicht zählen.`
+    : base
+}

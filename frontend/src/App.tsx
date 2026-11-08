@@ -8,7 +8,8 @@ import {
 import './App.css'
 import HistoryTab from './HistoryTab'
 import ModelsTab from './ModelsTab'
-import { UI } from './texts'
+import PrognoseTab from './PrognoseTab'
+import { PG, UI } from './texts'
 
 const MAP_W = 3000
 const MAP_H = 1998
@@ -26,7 +27,7 @@ type Station = {
   y: number
 }
 
-type Tab = 'history' | 'models'
+type Tab = 'history' | 'models' | 'forecast'
 
 const STATIONS: Station[] = [
   {
@@ -82,6 +83,7 @@ const STATIONS: Station[] = [
 ]
 
 const TABS: { id: Tab; label: string }[] = [
+  { id: 'forecast', label: PG.tab },
   { id: 'models', label: UI.tabModels },
   { id: 'history', label: UI.tabHistory },
 ]
@@ -120,7 +122,7 @@ function useAspect(ref: RefObject<HTMLElement | null>): number {
 
 export default function App() {
   const [selected, setSelected] = useState<Station | null>(null)
-  const [tab, setTab] = useState<Tab>('models')
+  const [tab, setTab] = useState<Tab>('forecast')
   const [showSources, setShowSources] = useState(false)
   const mapRef = useRef<HTMLDivElement>(null)
   const aspect = useAspect(mapRef)
@@ -320,7 +322,9 @@ export default function App() {
             </div>
 
             <div className="panel-body">
-              {tab === 'models' ? (
+              {tab === 'forecast' ? (
+                <PrognoseTab key={selected.code} code={selected.code} />
+              ) : tab === 'models' ? (
                 <ModelsTab code={selected.code} />
               ) : (
                 <HistoryTab key={selected.code} code={selected.code} />
