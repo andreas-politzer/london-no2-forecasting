@@ -42,7 +42,16 @@ The main metric is the mean absolute error (MAE, in µg/m³), averaged over the 
 - At KC1 with 182 and 364 days, calendar-only gradient boosting is marginally ahead, and the three best models lie within about 0.6 µg/m³ of each other.
 - Prophet has the highest error in 5 of the 8 cases.
 
-Read this as a first look, not a verdict. The models are untuned and the cross-validation covers a limited period.
+### Final test
+
+One window, the last 364 days of data (2 November 2025 to 31 October 2026), scored once and never used to choose anything.
+
+- Under the strict rule KC1, MY1 and RI2 are evaluable at all four horizons. BL0 and EA6 are not: their training year before 2 November 2025 is too thin (60 % and 66 % measured days against the 80 % required). RI2, which has no cross-validation score, is evaluable here because its data is nearly complete in the last year.
+- The errors are lower than in the cross-validation. At 7 days, SARIMA reaches 3.2 µg/m³ at KC1 (cross-validation: 6.7) and 2.6 at RI2.
+- The ranking changes. SARIMA is lowest in 6 of the 12 evaluable cells (KC1 at 7 and 182 days, RI2 at all four horizons). At MY1 the plain mean is lowest at 7 and 30 days and seasonal naive at 182 and 364 days; at KC1 with 364 days seasonal naive is lowest as well.
+- This is one window. Where it disagrees with the cross-validation, in particular at MY1, it is one more look and not a verdict that overrules the many windows of the cross-validation.
+
+Read all of this as a first look, not a verdict. The models are untuned and the cross-validation covers a limited period.
 
 ## Run it yourself
 
