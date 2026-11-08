@@ -105,6 +105,24 @@ export const TERMS: Record<string, Term> = {
       'Der Durchschnitt aller gültigen Tageswerte eines Monats. Ein Tag ist gültig, wenn dafür mindestens 18 verschiedene Stundenwerte gemessen wurden.',
     more: 'Monate ohne gültigen Tag bleiben leer, es wird nichts aufgefüllt. Die Linie dient nur zum Ansehen. Die Modelle rechnen mit den einzelnen Tageswerten, nicht mit Monatsmitteln.',
   },
+  outlook: {
+    title: 'Ausblick',
+    short:
+      'Eine echte Prognose für das nächste Jahr: Jedes Modell schaut auf die letzten 365 Tage und schreibt sie fort.',
+    more: 'Für diese Tage gibt es noch keine Messwerte, deshalb lässt sich nicht sagen, wer richtig liegt. In einem Jahr können wir die Linien mit der Wirklichkeit vergleichen.',
+  },
+  backtest: {
+    title: 'Rückblick',
+    short:
+      'Ein Test an der Vergangenheit: Wir tun so, als wären wir an einem früheren Tag gewesen, lassen die Modelle von dort aus raten und legen die gemessenen Werte daneben.',
+    more: 'Das Modell kennt dabei nur die 365 Tage vor dem Prognosestart, nie die Tage danach. Aus denselben Starts entstehen die Zahlen im Tab Modelle.',
+  },
+  origin: {
+    title: 'Prognosestart',
+    short:
+      'Der Tag, an dem die Prognose beginnt. Alles davor darf das Modell kennen, alles danach muss es vorhersagen.',
+    more: 'Im Ausblick markiert die gestrichelte Linie diesen Tag, im Rückblick wählst du ihn mit dem Regler.',
+  },
 }
 
 export const UI = {
@@ -241,7 +259,7 @@ export const PG = {
   backtestIntro:
     'Wähle einen Prognosestart in der Vergangenheit. Jedes Modell sieht nur die 365 Tage davor und sagt die folgenden Tage voraus. Die dunkle Linie zeigt, was tatsächlich gemessen wurde.',
   outlookNote:
-    'Die Modelle sind ungetunt und können danebenliegen. Die Linien zeigen nur, was jedes Modell aus den letzten 365 Tagen fortschreibt. Das ist keine amtliche Vorhersage.',
+    'Die Modelle laufen mit Standardeinstellungen und können danebenliegen. Die Linien zeigen nur, was jedes Modell aus den letzten 365 Tagen fortschreibt.',
   horizonLabel: 'Prognosehorizont',
   startLabel: 'Prognosestart',
   finalBadge: 'Gegenprobe',
@@ -258,7 +276,7 @@ export const PG = {
   unavailableBody:
     'Die Messreihe vor dem Prognosestart ist zu lückenhaft, um ein Modell sinnvoll zu trainieren. Wir füllen keine Lücken auf, um trotzdem eine Linie zu zeigen.',
   noStarts: 'Für diese Station gibt es zu diesem Horizont keine Rückblick-Prognosen.',
-  line: 'Linie',
+  smooth: 'Wochenmittel zeigen (glättet die Zacken)',
 }
 
 export function horizonDays(days: number): string {

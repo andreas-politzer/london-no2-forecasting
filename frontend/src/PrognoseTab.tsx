@@ -1,6 +1,8 @@
 import { useEffect, useState, type PointerEvent as ReactPointerEvent } from 'react'
+import InfoPopover from './InfoPopover'
 import {
   MODEL_INFO,
+  TERMS,
   PG,
   UI,
   coverageNote,
@@ -121,12 +123,29 @@ function mean(values: Values): number | null {
   return valid.length === 0 ? null : valid.reduce((a, b) => a + b, 0) / valid.length
 }
 
+function smoothValues(values: Values, radius = 3): Values {
+  return values.map((own, i) => {
+    if (own === null) return null
+    let sum = 0
+    let count = 0
+    const last = Math.min(values.length - 1, i + radius)
+    for (let j = Math.max(0, i - radius); j <= last; j++) {
+      const v = values[j]
+      if (v !== null && v !== undefined) {
+        sum += v
+        count += 1
+      }
+    }
+    return sum / count
+  })
+}
+
 function labelOf(model: string): string {
   return MODEL_INFO[model]?.label ?? model
 }
 
 function Plot({
-  data,
+  data: rawData,
   models,
   enabled,
   onToggle,
@@ -137,6 +156,16 @@ function Plot({
   onToggle: (model: string) => void
 }) {
   const [active, setActive] = useState<number | null>(null)
+  const [smooth, setSmooth] = useState(false)
+  const data: ChartData = smooth
+    ? {
+        ...rawData,
+        truth: smoothValues(rawData.truth),
+        series: Object.fromEntries(
+          Object.entries(rawData.series).map(([m, v]) => [m, smoothValues(v)]),
+        ),
+      }
+    : rawData
   const shown = active === null ? null : Math.min(active, data.length - 1)
 
   const visible: number[] = []
@@ -183,6 +212,17 @@ function Plot({
           </button>
         ))}
       </div>
+
+      {data.length > 30 && (
+        <label className="pg-smooth">
+          <input
+            type="checkbox"
+            checked={smooth}
+            onChange={(event) => setSmooth(event.target.checked)}
+          />
+          {PG.smooth}
+        </label>
+      )}
 
       <svg
         className="hist-chart"
@@ -251,7 +291,7 @@ function Plot({
           <>
             <strong>{weekdayDate(dateAt(data.startDate, shown))}</strong>
             <ul>
-              <li>
+              <li hidden={data.originIndex !== null && shown >= data.originIndex}>
                 <span className="pg-swatch" style={{ background: INK }} />
                 {PG.measured}:{' '}
                 {data.truth[shown] === null ? 'keine Messung' : oneDecimal.format(data.truth[shown])}
@@ -293,7 +333,10 @@ function ValueTable({
         <thead>
           <tr>
             <th scope="col">{PG.tableModel}</th>
-            <th scope="col">{title}</th>
+            <th scope="col">
+              {title}
+              {lowestIsBest && <InfoPopover {...TERMS.mae} />}
+            </th>
           </tr>
         </thead>
         <tbody>
@@ -400,7 +443,10 @@ export default function PrognoseTab({ code }: { code: string }) {
       }
       body = (
         <>
-          <h3 className="block-title">{PG.outlookTitle}</h3>
+          <h3 className="block-title">
+            {PG.outlookTitle}
+            <InfoPopover {...TERMS.outlook} />
+          </h3>
           <p className="unit-line">{outlookIntro(future.origin, future.data_until)}</p>
           <Plot data={data} models={models} enabled={enabled} onToggle={toggle} />
           <ValueTable
@@ -421,9 +467,16 @@ export default function PrognoseTab({ code }: { code: string }) {
     const entry = entries[at]
     body = (
       <>
-        <h3 className="block-title">{PG.backtestTitle}</h3>
+        <h3 className="block-title">
+          {PG.backtestTitle}
+          <InfoPopover {...TERMS.backtest} />
+        </h3>
         <p className="unit-line">{PG.backtestIntro}</p>
 
+        <p className="unit-line">
+          {PG.horizonLabel}
+          <InfoPopover {...TERMS.horizon} />
+        </p>
         <div className="pg-chips" role="group" aria-label={PG.horizonLabel}>
           {meta.horizons.map((h) => (
             <button
@@ -446,7 +499,10 @@ export default function PrognoseTab({ code }: { code: string }) {
         ) : (
           <>
             <label className="pg-slider">
-              <span>{PG.startLabel}</span>
+              <span>
+                {PG.startLabel}
+                <InfoPopover {...TERMS.origin} />
+              </span>
               <input
                 type="range"
                 min={0}
@@ -459,7 +515,12 @@ export default function PrognoseTab({ code }: { code: string }) {
               <strong>
                 {formatDay(entry.o)} bis {formatDay(dateAt(entry.o, horizon - 1))}
               </strong>
-              {entry.final && <span className="pg-badge">{PG.finalBadge}</span>}
+              {entry.final && (
+                <>
+                  <span className="pg-badge">{PG.finalBadge}</span>
+                  <InfoPopover {...TERMS.final} />
+                </>
+              )}
             </p>
             <p className="legend">
               {coverageNote(entry.truth.filter((v) => v !== null).length, horizon)}

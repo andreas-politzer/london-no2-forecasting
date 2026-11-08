@@ -756,3 +756,16 @@ body {
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
+
+.pg-smooth {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.pg-readout li[hidden] {
+  display: none;
+}
