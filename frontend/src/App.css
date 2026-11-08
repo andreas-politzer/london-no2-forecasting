@@ -135,6 +135,12 @@ body {
   background: #ffffff;
 }
 
+.attr-legal {
+  display: block;
+  margin-top: 8px;
+  font-weight: 700;
+}
+
 .attr a {
   color: inherit;
   text-decoration: underline;

@@ -235,7 +235,7 @@ export default function App() {
           aria-expanded={showSources}
           onClick={() => setShowSources((open) => !open)}
         >
-          Quellen &amp; Lizenzen
+          Rechtliches &amp; Quellen
         </button>
         <div className="attr" hidden={!showSources}>
           Map ©{' '}
@@ -267,6 +267,19 @@ export default function App() {
             Open Government Licence
           </a>
           .
+          <span className="attr-legal">
+            <a
+              href={`${import.meta.env.BASE_URL}rechtliches.html#impressum`}
+            >
+              Impressum
+            </a>
+            {' · '}
+            <a
+              href={`${import.meta.env.BASE_URL}rechtliches.html#datenschutz`}
+            >
+              Datenschutz
+            </a>
+          </span>
         </div>
       </div>
 
