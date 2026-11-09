@@ -54,9 +54,9 @@ export const MODEL_INFO: Record<string, ModelInfo> = {
 
 export const TERMS: Record<string, Term> = {
   mae: {
-    title: 'MAE: mittlerer Prognosefehler',
+    title: 'MAE: mittlerer absoluter Fehler',
     short:
-      'Wir vergleichen die vorhergesagten Werte mit den tatsächlich gemessenen. Der MAE ist der durchschnittliche Abstand dazwischen, in µg/m³. Ein Wert von 7,6 heißt: Die Prognose liegt im Schnitt um 7,6 µg/m³ daneben. Kleiner ist besser.',
+      'Wir vergleichen die vorhergesagten Werte mit den tatsächlich gemessenen. Der mittlere absolute Fehler (MAE) ist der durchschnittliche Abstand dazwischen, ohne Rücksicht auf die Richtung, in µg/m³. Ein Wert von 7,6 heißt: Die Prognose liegt im Schnitt um 7,6 µg/m³ daneben. Kleiner ist besser.',
     more: 'Mittelwert der absoluten Abweichungen zwischen Prognose und Messwert (Mean Absolute Error), gemittelt über alle Prognosestarts. Gezählt werden nur Testtage mit tatsächlicher Messung.',
   },
   horizon: {
@@ -97,7 +97,7 @@ export const TERMS: Record<string, Term> = {
   best: {
     title: 'Niedrigster Fehler',
     short:
-      'Fett und blau hinterlegt ist der niedrigste mittlere Fehler unter den auswertbaren Modellen dieser Spalte. Das ist keine Aussage über statistische Signifikanz.',
+      'Fett und blau hinterlegt ist der niedrigste MAE (mittlerer absoluter Fehler) unter den auswertbaren Modellen dieser Spalte. Das ist keine Aussage über statistische Signifikanz.',
   },
   monthly: {
     title: 'Monatsmittel',
@@ -329,6 +329,8 @@ export const PLAYGROUND = {
   tab: 'Spielwiese',
   title: 'NO₂ Playground',
   tagline: 'Erkunden. Kombinieren. Experimentieren.',
+  introButton: 'Einführung',
+  introOpen: 'Einführung öffnen: Was kann ich hier tun?',
   close: 'Spielwiese schließen',
   stationsLabel: 'Stationen',
   sections: {
@@ -348,7 +350,7 @@ export const PLAYGROUND = {
   weatherNote:
     'Wetter: keine Messung an den Stationen, sondern die Reanalyse ERA5 (über Open-Meteo), ein Wert je Tag für ganz Zentrallondon.',
   weatherMore: (cell: [number, number], temperature: number, humidity: number) =>
-    `ERA5 ist eine Modellrechnung, die Beobachtungen mit einem Wettermodell verbindet. Gemessen wurde an den Luftmessstationen nur das NO₂, nicht das Wetter. Für alle Stationen wird dieselbe Gitterzelle verwendet (Gitter von 0,25 Grad, grob 20 bis 30 km, Mitte bei ${cell[0].toLocaleString('de-DE')} °N, ${Math.abs(cell[1]).toLocaleString('de-DE')} °W). Wind, Regen und Schnee sind deshalb an allen Stationen gleich. Temperatur und Luftfeuchte sind der Mittelwert der fünf höhenkorrigierten Stationswerte; sie unterscheiden sich zwischen den Stationen um höchstens ${temperature.toLocaleString('de-DE')} °C und ${humidity.toLocaleString('de-DE')} ${humidity === 1 ? 'Prozentpunkt' : 'Prozentpunkte'}. Die Tage laufen wie beim NO₂ nach GMT. Das Wetter direkt an der Straße, etwa Windschatten zwischen Häusern, kennt die Rechnung nicht.`,
+    `ERA5 ist eine Modellrechnung, die Beobachtungen mit einem Wettermodell verbindet. Gemessen wurde an den Luftmessstationen nur das NO₂, nicht das Wetter. Für alle Stationen wird dieselbe Gitterzelle verwendet (Gitter von 0,25 Grad, laut Open-Meteo etwa 25 km, Mitte bei ${cell[0].toLocaleString('de-DE')} °N, ${Math.abs(cell[1]).toLocaleString('de-DE')} °W). Wind, Regen und Schnee sind deshalb an allen Stationen gleich. Temperatur und Luftfeuchte sind der Mittelwert der fünf höhenkorrigierten Stationswerte; sie unterscheiden sich zwischen den Stationen um höchstens ${temperature.toLocaleString('de-DE')} °C und ${humidity.toLocaleString('de-DE')} ${humidity === 1 ? 'Prozentpunkt' : 'Prozentpunkte'}. Die Tage laufen wie beim NO₂ nach GMT. Das Wetter direkt an der Straße, etwa Windschatten zwischen Häusern, kennt die Rechnung nicht.`,
 }
 
 export function playgroundDays(days: number, first: string, last: string): string {
