@@ -105,3 +105,15 @@ export function roundedTopBar(x: number, y: number, width: number, height: numbe
 export function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value))
 }
+
+// The other way round: pixel position back to a data value.
+export function linearInvert(d0: number, d1: number, r0: number, r1: number): Scale {
+  const span = r1 - r0
+  return (pixel) => (span === 0 ? d0 : d0 + ((pixel - r0) / span) * (d1 - d0))
+}
+
+// Two pixel positions of a drag as a sorted range, or null when the drag was
+// too short to count as a brush (it is then a click).
+export function brushRange(a: number, b: number, minPixels = 4): [number, number] | null {
+  return Math.abs(b - a) < minPixels ? null : a < b ? [a, b] : [b, a]
+}

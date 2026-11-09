@@ -84,7 +84,7 @@ export default function BarsChart({ config, data, width, highlight, onHighlight 
   }
 
   const statLabel = stat === 'median' ? PGU.statMedian : PGU.statMean
-  const tipLeft = hover === null ? 0 : clamp(band.start(hover) + band.width / 2, 96, Math.max(96, width - 96))
+  const tipLeft = hover === null ? 0 : clamp(band.start(hover) + band.width / 2, 124, Math.max(124, width - 124))
 
   return (
     <div className="pgx-plot">
