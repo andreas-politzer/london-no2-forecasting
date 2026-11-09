@@ -110,6 +110,11 @@ export const REPAIR_LABELS: Record<string, string> = {
   'model.period': 'Zeiträume des Modells',
   'model.features': 'Merkmale des Modells',
   'model.overlap': 'Training und Test überschneiden sich',
+  'model.kind': 'Modellart',
+  'model.mode': 'Modus des Modells',
+  'model.horizon': 'Prognosehorizont',
+  'model.station': 'Station des Modells',
+  'model.params': 'Einstellungen des Modells',
 }
 
 export function repairLabel(code: string): string {

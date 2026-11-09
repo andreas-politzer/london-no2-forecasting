@@ -1,4 +1,15 @@
 import type { WeatherKey } from './data'
+import {
+  DEFAULT_PARAMS,
+  HORIZONS,
+  MODEL_KINDS,
+  MODEL_MODES,
+  PARAM_LIMITS,
+  isModelFeature,
+  type ModelKind,
+  type ModelMode,
+  type ModelParams,
+} from './modelcore/types'
 
 export const STATE_VERSION = 1
 
@@ -105,10 +116,46 @@ export type ChartConfig = {
 }
 
 // Rule: the training period ends strictly before the test period starts.
+//
+// `features` is the whole selection the person made. It is never changed by
+// switching the mode: what a mode may not use is left out of the calculation
+// (see modelcore/config.ts), not out of the configuration. `horizon` is the
+// forecast horizon; explaining always looks one day ahead.
 export type ModelConfig = {
+  station?: string
+  kind: ModelKind
+  mode: ModelMode
+  horizon: number
   features: string[]
   trainPeriod: [string, string]
   testPeriod: [string, string]
+  params: ModelParams
+}
+
+export const DEFAULT_MODEL_FEATURES = [
+  'weekday',
+  'month',
+  'bankHoliday',
+  'trend',
+  'lag7',
+  'mean7',
+  'temperature_2m_mean',
+  'wind_speed_10m_mean',
+  'precipitation_sum',
+]
+
+// Training until the end of 2022, test from 2023 on (clamped to the data).
+export function defaultModelConfig(ctx: Pick<StateContext, 'firstDay' | 'lastDay'>): ModelConfig {
+  const clamp = (day: string) => (day < ctx.firstDay ? ctx.firstDay : day > ctx.lastDay ? ctx.lastDay : day)
+  return {
+    kind: 'linear',
+    mode: 'explain',
+    horizon: 7,
+    features: [...DEFAULT_MODEL_FEATURES],
+    trainPeriod: [clamp('2012-01-01'), clamp('2022-12-31')],
+    testPeriod: [clamp('2023-01-01'), ctx.lastDay],
+    params: { ...DEFAULT_PARAMS },
+  }
 }
 
 // COMBINE: two groups of days built from class switches, compared inside the
@@ -442,9 +489,9 @@ function parseModel(
     repairs.push('model')
     return undefined
   }
-  const features = raw.features.filter(
-    (item): item is string => typeof item === 'string',
-  )
+  const strings = raw.features.filter((item): item is string => typeof item === 'string')
+  const features: string[] = []
+  for (const item of strings) if (isModelFeature(item) && !features.includes(item)) features.push(item)
   if (features.length !== raw.features.length) repairs.push('model.features')
 
   const train = parsePeriod(raw.trainPeriod, ctx)
@@ -460,7 +507,55 @@ function parseModel(
     repairs.push('model.overlap')
     return undefined
   }
-  return { features, trainPeriod: train, testPeriod: test }
+
+  // Fields added later are optional: absent means the default, present but
+  // invalid means the default and a repair note.
+  const fallback = defaultModelConfig(ctx)
+  const config: ModelConfig = {
+    kind: fallback.kind,
+    mode: fallback.mode,
+    horizon: fallback.horizon,
+    features,
+    trainPeriod: train,
+    testPeriod: test,
+    params: { ...fallback.params },
+  }
+  if (raw.kind !== undefined) {
+    const kind = pickOf(raw.kind, MODEL_KINDS)
+    if (kind) config.kind = kind
+    else repairs.push('model.kind')
+  }
+  if (raw.mode !== undefined) {
+    const mode = pickOf(raw.mode, MODEL_MODES)
+    if (mode) config.mode = mode
+    else repairs.push('model.mode')
+  }
+  if (raw.horizon !== undefined) {
+    const horizon = (HORIZONS as readonly unknown[]).includes(raw.horizon) ? (raw.horizon as number) : null
+    if (horizon) config.horizon = horizon
+    else repairs.push('model.horizon')
+  }
+  if (raw.station !== undefined) {
+    if (typeof raw.station === 'string' && ctx.stations.includes(raw.station)) config.station = raw.station
+    else repairs.push('model.station')
+  }
+  if (raw.params !== undefined) {
+    if (isRecord(raw.params)) {
+      for (const key of Object.keys(PARAM_LIMITS) as (keyof ModelParams)[]) {
+        const value = raw.params[key]
+        if (value === undefined) continue
+        const [low, high] = PARAM_LIMITS[key]
+        if (typeof value === 'number' && Number.isFinite(value) && value >= low && value <= high) {
+          config.params[key] = key === 'trees' || key === 'depth' ? Math.round(value) : value
+        } else {
+          repairs.push('model.params')
+        }
+      }
+    } else {
+      repairs.push('model.params')
+    }
+  }
+  return config
 }
 
 // A group condition read from outside: unknown groupings and keys are dropped
