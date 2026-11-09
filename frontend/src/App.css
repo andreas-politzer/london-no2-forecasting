@@ -769,3 +769,43 @@ body {
 .pg-readout li[hidden] {
   display: none;
 }
+
+.hist-event-band {
+  fill: var(--muted);
+  opacity: 0.14;
+}
+
+.hist-event-line {
+  stroke: var(--navy);
+  stroke-width: 1;
+  stroke-dasharray: 2 3;
+  opacity: 0.6;
+}
+
+.hist-event-letter {
+  fill: var(--navy);
+  font-family: var(--ui-font);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.hist-events-title {
+  margin-top: 12px;
+  margin-bottom: 4px;
+}
+
+.hist-events {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.hist-event-key {
+  display: inline-block;
+  width: 1.4em;
+  color: var(--navy);
+  font-weight: 700;
+}
