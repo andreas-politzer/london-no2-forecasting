@@ -1,0 +1,384 @@
+{
+ "cases": [
+  {
+   "spec": {
+    "name": "linear explain KC1",
+    "station": "KC1",
+    "kind": "linear",
+    "mode": "explain",
+    "horizon": 1,
+    "features": [
+     "weekday",
+     "month",
+     "bankHoliday",
+     "trend",
+     "corona",
+     "ulez",
+     "temperature_2m_mean",
+     "wind_speed_10m_mean",
+     "wind_direction_10m_dominant",
+     "precipitation_sum",
+     "relative_humidity_2m_mean"
+    ],
+    "trainPeriod": [
+     "2012-01-01",
+     "2022-12-31"
+    ],
+    "testPeriod": [
+     "2023-01-01",
+     "2025-12-31"
+    ],
+    "params": {
+     "ridge": 1,
+     "trees": 100,
+     "depth": 3,
+     "rate": 0.1
+    }
+   },
+   "counts": {
+    "trainMeasured": 3932,
+    "trainRows": 3932,
+    "testMeasured": 1082,
+    "testComplete": 1082,
+    "testRows": 1063
+   },
+   "mean": {
+    "mae": 15.80255186955286,
+    "rmse": 17.351389868592566,
+    "bias": 13.998768564658457
+   },
+   "naive": {
+    "mae": 8.418786453433679,
+    "rmse": 11.910084689434472,
+    "bias": 0.02053621825023518
+   },
+   "model": {
+    "mae": 8.418660491963744,
+    "rmse": 10.411514481662365,
+    "bias": 5.703639602970599
+   },
+   "modelTrain": {
+    "mae": 5.8634555717114285,
+    "rmse": 8.07270245943931,
+    "bias": -5.716146443937815e-14
+   },
+   "coefficients": {
+    "weekday_1": 0.3881824692909969,
+    "weekday_2": 0.4965578837546781,
+    "weekday_3": 0.26504601267574485,
+    "weekday_4": 0.3630127341304611,
+    "weekday_5": -1.0961854044099646,
+    "weekday_6": -2.1127952481768917,
+    "month_2": -0.7591556879566423,
+    "month_3": -1.6299650519944586,
+    "month_4": -3.606651678126183,
+    "month_5": -4.166423038366115,
+    "month_6": -4.905986295451704,
+    "month_7": -4.915367302534253,
+    "month_8": -4.228813549829644,
+    "month_9": -2.7686907369715694,
+    "month_10": -1.6859182240455224,
+    "month_11": -0.13571157375192971,
+    "month_12": -0.12041960480126998,
+    "bankHoliday": -0.9393441574104269,
+    "trend": -3.76317943658501,
+    "corona_1": -0.2068281423311673,
+    "corona_2": -1.0730195368667437,
+    "ulez_1": -1.7467213290023313,
+    "ulez_2": -2.7312587583069536,
+    "temperature_2m_mean": -3.4625867386236036,
+    "wind_speed_10m_mean": -9.030110514275608,
+    "wind_direction_sin": 2.550567183744433,
+    "wind_direction_cos": -1.5207712065073375,
+    "precipitation_sum": 0.5733132524445924,
+    "relative_humidity_2m_mean": -0.8652332981259021
+   }
+  },
+  {
+   "spec": {
+    "name": "linear forecast 7 days MY1",
+    "station": "MY1",
+    "kind": "linear",
+    "mode": "forecast",
+    "horizon": 7,
+    "features": [
+     "weekday",
+     "month",
+     "bankHoliday",
+     "trend",
+     "lag7",
+     "lag14",
+     "mean7",
+     "mean28"
+    ],
+    "trainPeriod": [
+     "2011-01-01",
+     "2023-12-31"
+    ],
+    "testPeriod": [
+     "2024-01-01",
+     "2025-12-31"
+    ],
+    "params": {
+     "ridge": 10,
+     "trees": 100,
+     "depth": 3,
+     "rate": 0.1
+    }
+   },
+   "counts": {
+    "trainMeasured": 4596,
+    "trainRows": 4300,
+    "testMeasured": 610,
+    "testComplete": 460,
+    "testRows": 460
+   },
+   "mean": {
+    "mae": 41.60637249782419,
+    "rmse": 43.18618575177017,
+    "bias": 41.60637249782419
+   },
+   "naive": {
+    "mae": 12.423826086956522,
+    "rmse": 15.893831193264887,
+    "bias": 0.30082608695652174
+   },
+   "model": {
+    "mae": 9.617734886006811,
+    "rmse": 12.113362529949853,
+    "bias": 0.4321299251346793
+   },
+   "modelTrain": {
+    "mae": 17.261626901353797,
+    "rmse": 22.14571784204933,
+    "bias": -1.5255187294272663e-13
+   },
+   "coefficients": {
+    "weekday_1": 0.9046513020840299,
+    "weekday_2": 0.8836877150524809,
+    "weekday_3": 1.1663276205937236,
+    "weekday_4": 1.2602098299846505,
+    "weekday_5": -2.9956154188814756,
+    "weekday_6": -4.638858939808037,
+    "month_2": -0.4541304432019866,
+    "month_3": -1.0918564563518418,
+    "month_4": -0.962744191809501,
+    "month_5": -1.1441950440266175,
+    "month_6": -0.8041274678667881,
+    "month_7": -0.9297073965557481,
+    "month_8": -1.2101339352491227,
+    "month_9": 0.2356171783757925,
+    "month_10": -0.8540519297398244,
+    "month_11": -0.48841288091091034,
+    "month_12": 1.0367317472035464,
+    "bankHoliday": -3.092427446604723,
+    "trend": -8.416770562851196,
+    "lag7": 2.1382768049735095,
+    "lag14": 0.3336976478082957,
+    "mean7": -1.3265972278768028,
+    "mean28": 12.870732889734098
+   }
+  },
+  {
+   "spec": {
+    "name": "linear forecast 30 days KC1",
+    "station": "KC1",
+    "kind": "linear",
+    "mode": "forecast",
+    "horizon": 30,
+    "features": [
+     "weekday",
+     "month",
+     "trend",
+     "mean7",
+     "mean28"
+    ],
+    "trainPeriod": [
+     "2012-01-01",
+     "2023-12-31"
+    ],
+    "testPeriod": [
+     "2024-01-01",
+     "2026-10-31"
+    ],
+    "params": {
+     "ridge": 0,
+     "trees": 100,
+     "depth": 3,
+     "rate": 0.1
+    }
+   },
+   "counts": {
+    "trainMeasured": 4290,
+    "trainRows": 4240,
+    "testMeasured": 1000,
+    "testComplete": 997,
+    "testRows": 984
+   },
+   "mean": {
+    "mae": 15.217419556730531,
+    "rmse": 16.67526890116907,
+    "bias": 13.796687432486213
+   },
+   "naive": {
+    "mae": 8.613333333333333,
+    "rmse": 11.770560233539529,
+    "bias": 0.07502032520325197
+   },
+   "model": {
+    "mae": 6.511512030050932,
+    "rmse": 8.571984022116872,
+    "bias": -1.51489804684862
+   },
+   "modelTrain": {
+    "mae": 9.32109603944936,
+    "rmse": 12.412888369306263,
+    "bias": 7.480808425549734e-15
+   },
+   "coefficients": {
+    "weekday_1": 0.6316839820585084,
+    "weekday_2": 0.5865149000936333,
+    "weekday_3": 0.25002386893427686,
+    "weekday_4": 0.33710616762749235,
+    "weekday_5": -1.2236249632998737,
+    "weekday_6": -2.0720727825962153,
+    "month_2": -0.7723369134555925,
+    "month_3": -1.3469406757191917,
+    "month_4": -2.6333786843027864,
+    "month_5": -3.8024127904553784,
+    "month_6": -4.318613099071196,
+    "month_7": -4.204325457142442,
+    "month_8": -3.566670872760471,
+    "month_9": -1.6008598465549773,
+    "month_10": -1.315409800938918,
+    "month_11": 0.29251460720358363,
+    "month_12": -0.5880306165273483,
+    "trend": -5.477944195697829,
+    "mean7": -0.0483064531850357,
+    "mean28": 2.4947919006454593
+   }
+  },
+  {
+   "spec": {
+    "name": "boosting explain KC1",
+    "station": "KC1",
+    "kind": "boosting",
+    "mode": "explain",
+    "horizon": 1,
+    "features": [
+     "weekday",
+     "month",
+     "bankHoliday",
+     "trend",
+     "corona",
+     "ulez",
+     "temperature_2m_mean",
+     "wind_speed_10m_mean",
+     "wind_direction_10m_dominant",
+     "precipitation_sum",
+     "relative_humidity_2m_mean"
+    ],
+    "trainPeriod": [
+     "2012-01-01",
+     "2022-12-31"
+    ],
+    "testPeriod": [
+     "2023-01-01",
+     "2025-12-31"
+    ],
+    "params": {
+     "ridge": 1,
+     "trees": 100,
+     "depth": 3,
+     "rate": 0.1
+    }
+   },
+   "counts": {
+    "trainMeasured": 3932,
+    "trainRows": 3932,
+    "testMeasured": 1082,
+    "testComplete": 1082,
+    "testRows": 1063
+   },
+   "mean": {
+    "mae": 15.80255186955286,
+    "rmse": 17.351389868592566,
+    "bias": 13.998768564658457
+   },
+   "naive": {
+    "mae": 8.418786453433679,
+    "rmse": 11.910084689434472,
+    "bias": 0.02053621825023518
+   },
+   "model": {
+    "mae": 4.454185438672252,
+    "rmse": 6.174169944696174,
+    "bias": 2.046897344386181
+   },
+   "modelTrain": {
+    "mae": 4.376739515010375,
+    "rmse": 6.163733805379636,
+    "bias": -3.0279240175425684e-11
+   }
+  },
+  {
+   "spec": {
+    "name": "boosting forecast 1 day BL0",
+    "station": "BL0",
+    "kind": "boosting",
+    "mode": "forecast",
+    "horizon": 1,
+    "features": [
+     "weekday",
+     "month",
+     "trend",
+     "lag1",
+     "lag7",
+     "mean7",
+     "mean28"
+    ],
+    "trainPeriod": [
+     "2011-01-01",
+     "2021-12-31"
+    ],
+    "testPeriod": [
+     "2022-01-01",
+     "2023-08-31"
+    ],
+    "params": {
+     "ridge": 1,
+     "trees": 100,
+     "depth": 3,
+     "rate": 0.1
+    }
+   },
+   "counts": {
+    "trainMeasured": 3746,
+    "trainRows": 3584,
+    "testMeasured": 542,
+    "testComplete": 503,
+    "testRows": 503
+   },
+   "mean": {
+    "mae": 18.666155538737673,
+    "rmse": 20.827298803759877,
+    "bias": 16.365739094530515
+   },
+   "naive": {
+    "mae": 10.272882703777336,
+    "rmse": 13.68456859002248,
+    "bias": -0.3447316103379721
+   },
+   "model": {
+    "mae": 6.836291178924338,
+    "rmse": 8.90947156475231,
+    "bias": 0.7724596383510511
+   },
+   "modelTrain": {
+    "mae": 7.729412162124521,
+    "rmse": 9.950310840672914,
+    "bias": -5.575049311090652e-10
+   }
+  }
+ ]
+}
