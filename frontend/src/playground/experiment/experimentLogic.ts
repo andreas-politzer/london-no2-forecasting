@@ -39,6 +39,22 @@ export function histogram(values: number[], bins = 24): Histogram {
 }
 
 export type MethodKey = MethodKeyName
+
+export type BelowZero = { count: number; total: number; lowest: number | null }
+
+// Predictions below zero cannot be real NO2 values. They are counted and shown,
+// never clipped: clipping would hide the problem and change the error figures.
+export function belowZero(predicted: ArrayLike<number>): BelowZero {
+  let count = 0
+  let lowest: number | null = null
+  for (let i = 0; i < predicted.length; i += 1) {
+    if (predicted[i] < 0) {
+      count += 1
+      if (lowest === null || predicted[i] < lowest) lowest = predicted[i]
+    }
+  }
+  return { count, total: predicted.length, lowest }
+}
 export type MethodRow = {
   key: MethodKey
   mae: number
