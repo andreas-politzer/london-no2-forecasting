@@ -769,3 +769,142 @@ body {
 .pg-readout li[hidden] {
   display: none;
 }
+
+.hist-event-band {
+  fill: var(--muted);
+  opacity: 0.14;
+}
+
+.hist-event-line {
+  stroke: var(--navy);
+  stroke-width: 1;
+  stroke-dasharray: 2 3;
+  opacity: 0.6;
+}
+
+.hist-event-letter {
+  fill: var(--navy);
+  font-family: var(--ui-font);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.hist-events-title {
+  margin-top: 12px;
+  margin-bottom: 4px;
+}
+
+.hist-events {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.hist-event-key {
+  display: inline-block;
+  width: 1.4em;
+  color: var(--navy);
+  font-weight: 700;
+}
+
+.tab-playground {
+  margin-left: auto;
+  color: var(--red);
+}
+
+.pgw {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  color: var(--ink);
+}
+
+.pgw-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 16px 24px 8px;
+}
+
+.pgw-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  padding: 8px 24px 12px;
+}
+
+.pgw-stations {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.pgw-chip {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--bg);
+  color: var(--muted);
+  padding: 4px 12px;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.pgw-chip[aria-pressed='true'] {
+  border-color: var(--navy);
+  background: var(--navy);
+  color: #ffffff;
+}
+
+.pgw-body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 16px 24px 32px;
+}
+
+.pgw-examples {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pgw-card {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px 14px;
+}
+
+.pgw-card h4 {
+  margin: 0 0 4px;
+  color: var(--navy);
+  font-size: 0.95rem;
+}
+
+.pgw-card p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+
+.pgw-data {
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.6;
+}

@@ -1,6 +1,13 @@
 import { useEffect, useState, type PointerEvent as ReactPointerEvent } from 'react'
 import InfoPopover from './InfoPopover'
-import { TERMS, UI, historyCoverage, historyReadout } from './texts'
+import {
+  EVENTS,
+  EVENTS_INFO,
+  TERMS,
+  UI,
+  historyCoverage,
+  historyReadout,
+} from './texts'
 
 type Month = { m: string; mean: number | null; days: number; of: number }
 
@@ -29,6 +36,15 @@ async function getJson<T>(file: string): Promise<T> {
   const response = await fetch(`${BASE}data/${file}`)
   if (!response.ok) throw new Error(file)
   return (await response.json()) as T
+}
+
+function monthPosition(months: Month[], day: string): number | null {
+  const index = months.findIndex((m) => m.m === day.slice(0, 7))
+  return index < 0 ? null : index
+}
+
+function dmy(day: string): string {
+  return day.split('-').reverse().join('.')
 }
 
 export default function HistoryTab({ code }: { code: string }) {
@@ -154,6 +170,36 @@ export default function HistoryTab({ code }: { code: string }) {
           ) : null,
         )}
 
+        {EVENTS.map((event) => {
+          const start = monthPosition(months, event.from)
+          if (start === null) return null
+          const end = event.to ? monthPosition(months, event.to) : null
+          return (
+            <g key={event.letter}>
+              {end !== null ? (
+                <rect
+                  className="hist-event-band"
+                  x={x(start)}
+                  y={MT}
+                  width={x(end) - x(start)}
+                  height={PH}
+                />
+              ) : (
+                <line
+                  className="hist-event-line"
+                  x1={x(start)}
+                  x2={x(start)}
+                  y1={MT}
+                  y2={MT + PH}
+                />
+              )}
+              <text className="hist-event-letter" x={x(start) + 3} y={MT + 11}>
+                {event.letter}
+              </text>
+            </g>
+          )
+        })}
+
         <path className="hist-line" d={path} />
 
         {months.map((month, i) => {
@@ -189,6 +235,19 @@ export default function HistoryTab({ code }: { code: string }) {
           : UI.historyHint}
       </p>
       <p className="legend">{UI.historyLegendGap}</p>
+      <p className="legend hist-events-title">
+        <strong>{EVENTS_INFO.title}</strong>
+        <InfoPopover {...EVENTS_INFO} />
+      </p>
+      <ul className="hist-events">
+        {EVENTS.map((event) => (
+          <li key={event.letter}>
+            <span className="hist-event-key">{event.letter}</span>
+            {dmy(event.from)}
+            {event.to ? ` bis ${dmy(event.to)}` : ''}: {event.text}
+          </li>
+        ))}
+      </ul>
       <p className="legend">
         {historyCoverage(
           history.measured_days,

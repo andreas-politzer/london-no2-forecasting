@@ -8,9 +8,11 @@ Time series, played seriously. Five air-quality stations in London, daily NO₂ 
 
 NO₂ (nitrogen dioxide) is a traffic-related air pollutant. The data is real and messy: gaps, seasons, a pandemic year, a station that closed. That mess is what makes the model comparison worth doing.
 
-The explorer (React + TypeScript, hosted on GitHub Pages, interface in German) has three tabs. **Prognose** replays every model's forecast against what was really measured, and shows a one-year outlook from the latest data; that outlook can only be checked once the year has passed. **Modelle** compares the models with cross-validation scores. **Verlauf** shows the measured series per station.
+The explorer (React + TypeScript, hosted on GitHub Pages, interface in German) has three tabs and the Playground window. **Prognose** replays every model's forecast against what was really measured, and shows a one-year outlook from the latest data; that outlook can only be checked once the year has passed. **Modelle** compares the models with cross-validation scores. **Verlauf** shows the measured series per station.
 
-Possible next steps: public holidays, the COVID period, the ULEZ, weather.
+**Spielwiese (NO₂ Playground), work in progress.** A fourth part of the explorer for trying things out yourself. Its first section, **Erkunden**, is usable: pick days by period, month, weekday, bank holidays, pandemic and ULEZ phases, wind direction and ranges of weather values, and look at the selection in nine chart types (bars, time series, distribution, boxplot or violin, scatter plot or hexbin, heatmap or correlation, wind rose, calendar, year comparison). Every chart says how many days it rests on and hatches thin groups. A selection can be shared as a link, saved in the browser or exported as a file. **Kombinieren** and **Experimentieren** (a forecasting model you can configure and test in the browser) are announced in the window but not built yet.
+
+The models in the engine still use no holidays, weather or other outside information. The Playground lets you explore how much those factors matter in the data; it does not feed them into the forecasts.
 
 ## What is in here
 
@@ -29,11 +31,13 @@ No model uses holidays, weather or other outside information. Those are delibera
 
 **Data.** Hourly NO₂ values per station come from the Environmental Research Group (Imperial College London) interface to the London Air Quality Network. A day counts as measured only if it has at least 18 *distinct* hourly values, so duplicated timestamps can never raise the coverage. Everything else is a gap. Timestamps are GMT, as delivered by the interface; daily means are taken over GMT days, not London local days.
 
+**Playground data.** Besides the daily NO₂ values, the Playground uses daily weather (temperature, wind speed and direction, precipitation, snowfall, humidity) from the Open-Meteo archive, one value per day for central London, in GMT days like the air-quality data. Bank holidays, pandemic phases and ULEZ phases are fixed calendar facts. Thresholds, such as what counts as a windy day, are defined once in the exported data and shown in the interface.
+
 **Validation.** Rolling-origin cross-validation: the first forecast origin is 2018-01-01, a new origin follows every 91 days, each model trains on the 365 days before its origin and forecasts 7, 30, 182 or 364 days ahead. Training windows end strictly before the origin, and gaps are only filled inside the training window. The cross-validation windows end before 2025-11-02. **A separate, one-time final test covers the last 364 days of data, starting at 2025-11-02,** and is reported on its own, never mixed with the cross-validation. Only days that were actually measured count, and the same coverage rules apply. Not every station covers the whole window: EA6 stops on 5 January 2026 and BL0 on 3 October 2026, so their final-test scores rest on fewer days, or may come out as "not evaluable".
 
 **Evaluation rule, fixed before looking at results.** A fold counts only if at least 80 % of the days in its training window and at least 80 % of the days in its test window are really measured values (interpolated days never count). A station and horizon gets a score only if at least 80 % of its folds count; otherwise it is shown as "not evaluable", with the reason. A looser variant (70 % on all three thresholds) was added after the first results. It is **labelled as post hoc**, written to separate files, and never replaces the main evaluation. The period, the 18-hour day rule and the final test window were also fixed before the new results were seen.
 
-**Checks.** Thirteen automatic tests: no data leakage in any fold, forecasts that must not change when future values are tampered with (for every model family), the day rule with duplicated timestamps, the final window, the evaluation and exclusion logic, and a control against reference values computed with the course notebook's logic.
+**Checks.** Backend: automatic tests (`python -m pytest tests -q` in `backend/`), among them: no data leakage in any fold, forecasts that must not change when future values are tampered with (for every model family), the day rule with duplicated timestamps, the final window, the evaluation and exclusion logic, and a control against reference values computed with the course notebook's logic. The Playground data export has its own tests. Frontend: 231 unit tests (Vitest) for the Playground's statistics, day filter, saved states and chart data, checked against reference values from Python.
 
 ## First results
 
@@ -82,14 +86,18 @@ cd ..
 
 The full run takes about a minute on a laptop. The thread variables matter: without them the models compete for CPU cores and the run can be many times slower. Results go to `results/`, together with a manifest that records versions, configuration, data checksum and git state.
 
-Export the results for the explorer and start it locally (from the repository root):
+Export the results for the explorer and start it locally (from the repository root). The Playground has its own data files, built from the air-quality data plus daily weather from Open-Meteo (cached in `data/raw/weather`, not part of the repository):
 
 ```bash
 python tools/export_frontend_data.py
+python tools/fetch_weather.py
+python tools/build_playground_data.py
 cd frontend
 npm ci
 npm run dev
 ```
+
+Frontend checks: `npm test` (unit tests for the Playground's numerics, filters and chart data), `npm run lint` and `npx tsc -b`.
 
 Rebuild the map (from the repository root; needs internet access to OpenStreetMap's Overpass service; downloads are cached in `data/raw/osm`):
 
@@ -105,9 +113,12 @@ An earlier analysis on the course dataset (2010–2023) is kept as the git tag `
 - No model tuning yet: default settings on purpose.
 - The training window is 365 days. That is short for yearly patterns, which is why Prophet is a rough fit here.
 - One final test window and a limited cross-validation period.
+- Playground: weather is one reanalysis value for all of central London, not measured at the stations. Scatter plot, heatmap, wind rose, calendar and year comparison show only the first selected station. A pattern in a chart is not a cause.
 
 ## Data and attribution
 
 - Air-quality data: This information has been obtained from the [Environmental Research Group of Imperial College London](https://www.imperial.ac.uk/school-public-health/environmental-research-group/), using data from the [London Air Quality Network](https://www.londonair.org.uk). This information is licensed under the terms of the [Open Government Licence](https://www.nationalarchives.gov.uk/doc/open-government-licence/version/2/).
 - Map data: © [OpenStreetMap contributors](https://www.openstreetmap.org/copyright), available under the Open Database Licence (ODbL). The map in `assets/` is a derived work drawn from that data.
+- Weather data for the Playground: [Open-Meteo.com](https://open-meteo.com/) archive API (licence [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)), based on the ERA5 reanalysis, Copernicus Climate Change Service / ECMWF (contains modified Copernicus Climate Change Service information). The values are reanalysis, not station measurements.
+- Bank holidays in England: the Python package [`holidays`](https://github.com/vacanza/python-holidays) (MIT licence).
 - The code is released under the MIT licence (see `LICENSE`).
