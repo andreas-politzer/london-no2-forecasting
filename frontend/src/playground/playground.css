@@ -143,3 +143,4 @@
 .pgc-table th:first-child, .pgc-table tbody th { text-align: left; }
 .pgc-diff { margin: 0; font-size: 0.9rem; }
 .pgc-plot { min-width: 0; }
+.pgc-nocause { padding: 6px 10px; border-left: 3px solid var(--navy); background: rgba(29, 42, 74, 0.04); }

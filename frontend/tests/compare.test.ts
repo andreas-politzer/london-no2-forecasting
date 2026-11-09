@@ -122,6 +122,7 @@ describe('comparison numbers', () => {
     expect(kc1.diff as number).toBeLessThan(0) // windy days have lower NO2
     expect(kc1.percent).toBeCloseTo(((kc1.diff as number) / mean(valuesB)) * 100, 9)
     expect(kc1.a.low).toBe(false)
+    expect(kc1.a.days - kc1.a.n).toBe(count(split.a) - valuesA.length) // days without a value
   })
   it('hides statistics when a group has fewer than ten values', () => {
     const few = all.map((_, i) => i >= 4000 && i < 4008)

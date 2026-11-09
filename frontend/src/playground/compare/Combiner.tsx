@@ -73,6 +73,9 @@ export default function Combiner({ engine, session, ctx, stationList }: Props) {
           <InfoPopover title={PGC.caveatTitle} short={PGC.caveatShort} more={PGC.caveatMore} />
         </p>
         <p className="pgx-note">{PGC.switchHint}</p>
+        <p className="pgx-hint pgc-nocause">
+          <strong>{PGC.noCause}</strong> {PGC.noCauseText}
+        </p>
 
         <div className="pgc-groups">
           <ConditionEditor
@@ -123,6 +126,10 @@ export default function Combiner({ engine, session, ctx, stationList }: Props) {
             {compare.b === null ? PGC.bRest : describeCondition(compare.b)}
           </span>
         </p>
+        <p className="pgx-note">
+          {PGC.scope(selectedDays, engine.input.days)}{' '}
+          {PGC.groupDays(PGC.groupA, countSelected(split.a))}, {PGC.groupDays(PGC.groupB, countSelected(split.b))}.
+        </p>
         {split.overlap > 0 && <p className="pgx-note">{PGC.overlap(split.overlap)}</p>}
 
         <div className="pgx-marking">
@@ -138,7 +145,11 @@ export default function Combiner({ engine, session, ctx, stationList }: Props) {
           >
             {PGC.apply}
           </button>
-          {asSelection === null && <span className="pgx-note">{PGC.applyCannot}</span>}
+          {asSelection === null ? (
+            <span className="pgx-note">{PGC.applyCannot}</span>
+          ) : (
+            <span className="pgx-note">{PGC.applyKeeps}</span>
+          )}
         </div>
 
         {state.stations.length === 0 ? (

@@ -326,6 +326,14 @@ export const PGC = {
   rowA: 'A',
   rowB: 'B',
   tooFew: 'zu wenige',
+  colMissing: 'ohne Messwert',
+  noCause: 'Zusammenhang, keine Ursache.',
+  noCauseText:
+    'Der Unterschied zwischen A und B beschreibt die Daten, er erklärt nicht, warum. Die Gruppen unterscheiden sich fast immer auch in anderem (Jahreszeit, Jahr, Verkehr).',
+  scope: (selected: number, total: number) =>
+    `Der Vergleich gilt nur innerhalb der Tagesauswahl: ${selected.toLocaleString('de-DE')} von ${total.toLocaleString('de-DE')} Tagen.`,
+  groupDays: (label: string, days: number) => `${label}: ${days.toLocaleString('de-DE')} Tage`,
+  applyKeeps: 'Die Gruppen hier bleiben unverändert. Vergleiche gelten danach nur innerhalb der neuen Tagesauswahl.',
   fewDays: 'wenige Tage',
   unit: 'µg/m³',
   diffTitle: 'Unterschied (A minus B)',
@@ -346,7 +354,7 @@ export const PGC = {
   apply: 'Gruppe A im Erkunden ansehen',
   applyCannot:
     'Gruppe A lässt sich mit den Reglern der Tagesauswahl nicht genau ausdrücken (zum Beispiel „mittel“, „trocken“, „Frost“ oder „Sommertag“). Der Vergleich hier funktioniert trotzdem.',
-  applyHint: 'Übernimmt Gruppe A als Tagesauswahl und wechselt zu „Erkunden“.',
+  applyHint: 'Übernimmt Gruppe A als Tagesauswahl und wechselt zu „Erkunden“. Gruppe A und B bleiben hier unverändert.',
   noStations: 'Wähle oben mindestens eine Station.',
   thresholds: {
     calm: (kmh: string) => `Windtagesmittel bis ${kmh} km/h (unteres Viertel der Tage)`,

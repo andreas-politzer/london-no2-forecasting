@@ -91,6 +91,7 @@ function Row({ label, color, stat }: { label: string; color: string; stat: SideS
         {stat.n.toLocaleString('de-DE')}
         {hide ? <span className="pgx-small-note"> ({PGC.tooFew})</span> : stat.low ? <span className="pgx-small-note"> ({PGC.fewDays})</span> : null}
       </td>
+      <td>{(stat.days - stat.n).toLocaleString('de-DE')}</td>
       <td>{cell(stat.mean)}</td>
       <td>{cell(stat.median)}</td>
     </tr>
@@ -121,6 +122,7 @@ export default function CompareResult({ results, places, minValues }: Props) {
                   <th scope="col">{PGC.colGroup}</th>
                   <th scope="col">{PGC.colDays}</th>
                   <th scope="col">{PGC.colValues}</th>
+                  <th scope="col">{PGC.colMissing}</th>
                   <th scope="col">{PGC.colMean}</th>
                   <th scope="col">{PGC.colMedian}</th>
                 </tr>
