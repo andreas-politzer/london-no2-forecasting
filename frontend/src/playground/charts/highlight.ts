@@ -136,10 +136,16 @@ function groupsToSelection(
         return withRange(selection, 'wind_speed_10m_mean', [th.wind_windy_min_kmh, null])
       }
       return null
-    case 'rainClass':
-      return keys.length === 1 && keys[0] === 'veryWet'
-        ? withRange(selection, 'precipitation_sum', [th.rain_very_wet_min_mm, null])
-        : null
+    case 'rainClass': {
+      // "very wet" alone, or "wet" and "very wet" together (= at least the wet
+      // limit), are plain lower limits. Anything with "dry", or "wet" alone, is not.
+      if (keys.includes('dry')) return null
+      const wet = keys.includes('wet')
+      const veryWet = keys.includes('veryWet')
+      if (veryWet && !wet) return withRange(selection, 'precipitation_sum', [th.rain_very_wet_min_mm, null])
+      if (veryWet && wet) return withRange(selection, 'precipitation_sum', [th.rain_wet_min_mm, null])
+      return null
+    }
     case 'snowDay':
       return keys.length === 1 && keys[0] === 'snow'
         ? withRange(selection, 'snowfall_sum', [th.snow_day_min_cm, null])

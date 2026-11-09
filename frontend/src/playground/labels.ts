@@ -103,6 +103,9 @@ export const REPAIR_LABELS: Record<string, string> = {
   'charts.y': 'y-Achse',
   'charts.group': 'Gruppierung',
   'charts.options': 'Einstellungen eines Diagramms',
+  compare: 'Vergleich',
+  'compare.a': 'Gruppe A',
+  'compare.b': 'Gruppe B',
   model: 'Modell',
   'model.period': 'Zeiträume des Modells',
   'model.features': 'Merkmale des Modells',
@@ -298,4 +301,64 @@ export const PGU = {
   noticeVersion: 'Der Link stammt aus einer anderen Version der Spielwiese. Sie startet mit der Grundeinstellung.',
   noticeRepaired: (parts: string) => `Der Link war nicht ganz in Ordnung. Zurückgesetzt wurde: ${parts}.`,
   noticeClose: 'Hinweis schließen',
+}
+
+// Combine: two groups of days compared inside the day filter.
+export const PGC = {
+  intro:
+    'Baue aus Schaltern zwei Gruppen von Tagen und vergleiche das NO₂. Gruppe B sind alle anderen Tage der Tagesauswahl oder eine zweite Kombination.',
+  groupA: 'Gruppe A',
+  groupB: 'Gruppe B',
+  bRest: 'alle anderen Tage',
+  bOwn: 'eigene Kombination',
+  bLabel: 'Gruppe B besteht aus',
+  switchHint:
+    'Nichts gewählt heißt: alle Tage. In einer Zeile heißt mehrere Einträge „oder“, verschiedene Zeilen heißen „und“.',
+  overlap: (days: number) =>
+    `${days.toLocaleString('de-DE')} Tage passen zu beiden Beschreibungen. Sie zählen nur in Gruppe A.`,
+  emptyFilter: 'In der Tagesauswahl sind keine Tage. Lockere den Filter links.',
+  stationTitle: (code: string, place: string) => `${code} · ${place}`,
+  colGroup: 'Gruppe',
+  colDays: 'Tage',
+  colValues: 'Messwerte',
+  colMean: 'Mittelwert',
+  colMedian: 'Median',
+  rowA: 'A',
+  rowB: 'B',
+  tooFew: 'zu wenige',
+  fewDays: 'wenige Tage',
+  unit: 'µg/m³',
+  diffTitle: 'Unterschied (A minus B)',
+  diffMean: (diff: string, percent: string | null) =>
+    `Mittelwert: ${diff} µg/m³${percent ? ` (${percent})` : ''}`,
+  diffMedian: (diff: string) => `Median: ${diff} µg/m³`,
+  notComparable: (min: number) =>
+    `Für einen Vergleich braucht jede Gruppe mindestens ${min} Messwerte.`,
+  axis: 'NO₂ (µg/m³)',
+  plotLabel: (code: string) => `Verteilung des NO₂ an der Station ${code}, Gruppe A und B`,
+  plotNote:
+    'Die Box zeigt die mittlere Hälfte der Tage, der Strich darin ist der Median, der Punkt der Mittelwert. Gestrichelt heißt: wenige Tage.',
+  caveatTitle: 'Wie liest man den Vergleich?',
+  caveatShort:
+    'Der Unterschied sagt, wie sich die Gruppen unterscheiden, nicht warum. Die Gruppen unterscheiden sich fast immer auch in anderem, zum Beispiel in Jahreszeit, Jahr oder Verkehr.',
+  caveatMore:
+    'Windige Tage kommen zum Beispiel öfter im Winter vor, und im Winter ist das NO₂ aus mehreren Gründen höher. Ein Unterschied zwischen zwei Gruppen kann deshalb vom Wind kommen oder von etwas, das mit dem Wind zusammenfällt. Mit der Tagesauswahl links lässt sich das eingrenzen, zum Beispiel auf einen Monat. Aufeinanderfolgende Tage sind nicht unabhängig, darum gibt es hier bewusst keinen Signifikanztest. Beachte immer die Zahl der Tage.',
+  apply: 'Gruppe A im Erkunden ansehen',
+  applyCannot:
+    'Gruppe A lässt sich mit den Reglern der Tagesauswahl nicht genau ausdrücken (zum Beispiel „mittel“, „trocken“, „Frost“ oder „Sommertag“). Der Vergleich hier funktioniert trotzdem.',
+  applyHint: 'Übernimmt Gruppe A als Tagesauswahl und wechselt zu „Erkunden“.',
+  noStations: 'Wähle oben mindestens eine Station.',
+  thresholds: {
+    calm: (kmh: string) => `Windtagesmittel bis ${kmh} km/h (unteres Viertel der Tage)`,
+    normal: 'dazwischen',
+    windy: (kmh: string) => `Windtagesmittel ab ${kmh} km/h (oberes Viertel der Tage)`,
+    dry: (mm: string) => `weniger als ${mm} mm Regen`,
+    wet: (from: string, to: string) => `${from} bis unter ${to} mm Regen`,
+    veryWet: (mm: string) => `ab ${mm} mm Regen`,
+    snow: (cm: string) => `ab ${cm} cm Schnee`,
+    noSnow: 'weniger Schnee',
+    frost: (deg: string) => `Tagestiefstwert unter ${deg} °C`,
+    mild: 'dazwischen',
+    summer: (deg: string) => `Tageshöchstwert über ${deg} °C`,
+  },
 }

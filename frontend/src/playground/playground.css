@@ -128,3 +128,18 @@
 .pgx-day:hover { stroke: var(--navy); stroke-width: 1.5; }
 .pgx-ramp { display: inline-block; width: 120px; height: 10px; border-radius: 3px; vertical-align: middle; }
 .pgx-inline { display: flex; align-items: center; gap: 8px; flex-direction: row; font-size: 0.85rem; }
+
+/* combine: two groups of days */
+.pgc-groups { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; align-items: start; }
+.pgc-b { display: grid; gap: 8px; min-width: 0; }
+.pgc-editor { gap: 8px; }
+.pgc-row { display: grid; gap: 4px; }
+.pgc-row-label { font-weight: 600; font-size: 0.8rem; color: var(--muted); }
+.pgc-results { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 12px; align-items: start; }
+.pgc-results > .pgx-note { grid-column: 1 / -1; }
+.pgc-table { border-collapse: collapse; width: 100%; font-size: 0.85rem; }
+.pgc-table th, .pgc-table td { padding: 4px 8px; text-align: right; border-bottom: 1px solid var(--line); white-space: nowrap; }
+.pgc-table thead th { color: var(--muted); font-weight: 600; font-size: 0.8rem; }
+.pgc-table th:first-child, .pgc-table tbody th { text-align: left; }
+.pgc-diff { margin: 0; font-size: 0.9rem; }
+.pgc-plot { min-width: 0; }

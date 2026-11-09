@@ -111,6 +111,43 @@ export type ModelConfig = {
   testPeriod: [string, string]
 }
 
+// COMBINE: two groups of days built from class switches, compared inside the
+// day filter. A condition lists, per grouping, the classes that are allowed
+// (within one grouping "or", between groupings "and"); a missing grouping
+// means "any". b = null means "all other days of the filter".
+export const CONDITION_KEYS = {
+  windClass: ['calm', 'normal', 'windy'],
+  rainClass: ['dry', 'wet', 'veryWet'],
+  snowDay: ['snow', 'noSnow'],
+  temperatureClass: ['frost', 'mild', 'summer'],
+  season: ['winter', 'spring', 'summer', 'autumn'],
+  dayType: ['workday', 'weekend', 'bankHoliday'],
+  corona: ['0', '1', '2'],
+  ulez: ['0', '1', '2', '3'],
+} as const
+export type ConditionGrouping = keyof typeof CONDITION_KEYS
+export const CONDITION_GROUPINGS = Object.keys(CONDITION_KEYS) as ConditionGrouping[]
+export type Condition = Partial<Record<ConditionGrouping, string[]>>
+export type CompareConfig = { a: Condition; b: Condition | null }
+
+export function defaultCompare(): CompareConfig {
+  return { a: { windClass: ['windy'] }, b: null }
+}
+
+// Canonical form: keys in their fixed order, no duplicates, and a grouping
+// that is empty or lists every class is dropped (both mean "any").
+export function normalizeCondition(condition: Condition): Condition {
+  const out: Condition = {}
+  for (const grouping of CONDITION_GROUPINGS) {
+    const list = condition[grouping]
+    if (!list) continue
+    const all: readonly string[] = CONDITION_KEYS[grouping]
+    const keys = all.filter((key) => list.includes(key))
+    if (keys.length > 0 && keys.length < all.length) out[grouping] = keys
+  }
+  return out
+}
+
 // Highlighting (marking days inside a chart) is NOT part of the state:
 // it is transient and never changes the day selection.
 export type PlaygroundState = {
@@ -120,6 +157,7 @@ export type PlaygroundState = {
   selection: DaySelection
   charts: ChartConfig[]
   model?: ModelConfig
+  compare?: CompareConfig
 }
 
 export type StateContext = {
@@ -425,6 +463,44 @@ function parseModel(
   return { features, trainPeriod: train, testPeriod: test }
 }
 
+// A group condition read from outside: unknown groupings and keys are dropped
+// (reported), the result is normalised.
+function parseCondition(raw: unknown): { condition: Condition; clean: boolean } | null {
+  if (!isRecord(raw)) return null
+  let clean = true
+  const found: Condition = {}
+  for (const [key, value] of Object.entries(raw)) {
+    const grouping = pickOf(key, CONDITION_GROUPINGS)
+    if (!grouping || !Array.isArray(value)) {
+      clean = false
+      continue
+    }
+    const allowed: readonly string[] = CONDITION_KEYS[grouping]
+    const keys = value.filter((item): item is string => typeof item === 'string' && allowed.includes(item))
+    if (keys.length !== value.length) clean = false
+    found[grouping] = keys
+  }
+  return { condition: normalizeCondition(found), clean }
+}
+
+function parseCompare(raw: unknown, repairs: string[]): CompareConfig | undefined {
+  if (raw === undefined) return undefined
+  if (!isRecord(raw)) {
+    repairs.push('compare')
+    return undefined
+  }
+  const fallback = defaultCompare()
+  const a = parseCondition(raw.a)
+  if (!a || !a.clean) repairs.push('compare.a')
+  let b: Condition | null = null
+  if (raw.b !== undefined && raw.b !== null) {
+    const parsed = parseCondition(raw.b)
+    if (parsed) b = parsed.condition
+    if (!parsed || !parsed.clean) repairs.push('compare.b')
+  }
+  return { a: a ? a.condition : fallback.a, b }
+}
+
 // Checks a loaded or shared state. A wrong version or a non-object gives the
 // default state; broken parts are replaced by defaults and listed in repairs.
 export function parseState(raw: unknown, ctx: StateContext): ParseResult {
@@ -442,6 +518,7 @@ export function parseState(raw: unknown, ctx: StateContext): ParseResult {
 
   const charts = parseCharts(raw.charts, ctx, repairs)
   const model = parseModel(raw.model, ctx, repairs)
+  const compare = parseCompare(raw.compare, repairs)
 
   const state: PlaygroundState = {
     version: STATE_VERSION,
@@ -451,5 +528,6 @@ export function parseState(raw: unknown, ctx: StateContext): ParseResult {
     charts: charts.length > 0 ? charts : fallback.charts,
   }
   if (model) state.model = model
+  if (compare) state.compare = compare
   return { state, repairs }
 }
