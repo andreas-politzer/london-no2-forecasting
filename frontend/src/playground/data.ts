@@ -38,6 +38,24 @@ export type WeatherFile = {
   series: Record<WeatherKey, number[]>
 }
 
+export type Thresholds = {
+  wind_calm_max_kmh: number
+  wind_windy_min_kmh: number
+  rain_wet_min_mm: number
+  rain_very_wet_min_mm: number
+  snow_day_min_cm: number
+  frost_day_tmin_below: number
+  summer_day_tmax_above: number
+  min_days_per_group: number
+}
+
+export type Definitions = {
+  wind_quartiles_kmh: [number, number]
+  thresholds: Thresholds
+  all_days: Record<string, number>
+  measured_days: Record<string, Record<string, number>>
+}
+
 export type PlaygroundMeta = {
   days: number
   first_day: string
@@ -45,6 +63,7 @@ export type PlaygroundMeta = {
   measured_days: Record<string, number>
   holidays: { package: string; subdivision: string; count: number }
   weather_station_spread: Record<string, number>
+  definitions: Definitions
 }
 
 type StationFile = {

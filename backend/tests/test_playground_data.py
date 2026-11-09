@@ -5,6 +5,7 @@ Die Kontrollzahlen wurden am 09.11.2026 mit dem Datenstand vom 08.11.2026 gesetz
 """
 import hashlib
 import json
+import statistics
 from datetime import date
 from pathlib import Path
 
@@ -168,3 +169,76 @@ def test_checksums_in_meta_match_files():
     for name, digest in META["files"].items():
         got = hashlib.sha256((PG / name).read_bytes()).hexdigest()
         assert got == digest, name
+
+
+def test_thresholds_in_meta():
+    definitions = META["definitions"]
+    t = definitions["thresholds"]
+    wind = WEATHER["series"]["wind_speed_10m_mean"]
+    q1, _, q3 = statistics.quantiles(wind, n=4, method="inclusive")
+    assert t["wind_calm_max_kmh"] == round(q1, 2)
+    assert t["wind_windy_min_kmh"] == round(q3, 2)
+    assert definitions["wind_quartiles_kmh"] == [round(q1, 2), round(q3, 2)]
+    assert t["rain_wet_min_mm"] == 1
+    assert t["rain_very_wet_min_mm"] == 10
+    assert t["snow_day_min_cm"] == 0.5
+    assert t["frost_day_tmin_below"] == 0
+    assert t["summer_day_tmax_above"] == 25
+    assert t["min_days_per_group"] == 30
+
+
+def test_class_counts_recomputed_from_the_files():
+    s = WEATHER["series"]
+    wind = s["wind_speed_10m_mean"]
+    q1, _, q3 = statistics.quantiles(wind, n=4, method="inclusive")
+    rain, snow = s["precipitation_sum"], s["snowfall_sum"]
+    tmin, tmax = s["temperature_2m_min"], s["temperature_2m_max"]
+    weekday, holiday = CAL["weekday"], CAL["holiday"]
+    days = range(N)
+    flags = {
+        "wind_calm": [wind[i] <= q1 for i in days],
+        "wind_windy": [wind[i] >= q3 for i in days],
+        "rain_dry": [rain[i] < 1 for i in days],
+        "rain_wet": [rain[i] >= 1 for i in days],
+        "rain_very_wet": [rain[i] >= 10 for i in days],
+        "rain_extreme": [rain[i] >= 20 for i in days],
+        "snow_gt0": [snow[i] > 0 for i in days],
+        "snow_ge0.1": [snow[i] >= 0.1 for i in days],
+        "snow_ge0.5": [snow[i] >= 0.5 for i in days],
+        "snow_ge1": [snow[i] >= 1 for i in days],
+        "frost_day": [tmin[i] < 0 for i in days],
+        "ice_day": [tmax[i] < 0 for i in days],
+        "summer_day": [tmax[i] > 25 for i in days],
+        "bank_holiday": [holiday[i] == 1 for i in days],
+        "weekend": [holiday[i] == 0 and weekday[i] >= 5 for i in days],
+        "workday": [holiday[i] == 0 and weekday[i] < 5 for i in days],
+    }
+    for k in range(3):
+        flags[f"corona_{k}"] = [CAL["corona"][i] == k for i in days]
+    for k in range(4):
+        flags[f"ulez_{k}"] = [CAL["ulez"][i] == k for i in days]
+
+    definitions = META["definitions"]
+    assert set(flags) == set(definitions["all_days"])
+    for name, values in flags.items():
+        assert sum(values) == definitions["all_days"][name], name
+        for station in data.STATIONS:
+            measured = sum(
+                flag and value is not None
+                for flag, value in zip(values, NO2[station]["no2"])
+            )
+            assert measured == definitions["measured_days"][station][name], (
+                station,
+                name,
+            )
+
+
+def test_headline_class_counts_pinned():
+    all_days = META["definitions"]["all_days"]
+    assert all_days["wind_calm"] == 1575
+    assert all_days["wind_windy"] == 1553
+    assert all_days["rain_very_wet"] == 264
+    assert all_days["snow_ge0.5"] == 65
+    assert all_days["frost_day"] == 393
+    assert all_days["ice_day"] == 14
+    assert all_days["bank_holiday"] == 153
