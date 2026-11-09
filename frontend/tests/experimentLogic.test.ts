@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   baselinesCoincide,
+  belowZero,
   errorsOf,
   germanDate,
   histogram,
@@ -56,6 +57,18 @@ describe('errors and tables', () => {
     expect(baselinesCoincide(fake(7, 7))).toBe(true)
     expect(baselinesCoincide(fake(1, 7))).toBe(false)
     expect(baselinesCoincide(fake(30, 35))).toBe(false)
+  })
+})
+
+describe('predictions below zero', () => {
+  it('counts them and reports the lowest, without changing anything', () => {
+    const values = [3, -1.5, 0, -4, 7]
+    const copy = [...values]
+    expect(belowZero(values)).toEqual({ count: 2, total: 5, lowest: -4 })
+    expect(values).toEqual(copy)
+  })
+  it('says nothing is below zero when nothing is', () => {
+    expect(belowZero([0, 1, 2])).toEqual({ count: 0, total: 3, lowest: null })
   })
 })
 

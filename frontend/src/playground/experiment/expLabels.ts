@@ -148,9 +148,15 @@ export const PGE = {
     'Bei 7 Tagen Horizont sind Persistenz und Saisonal naiv dasselbe Verfahren: beide nehmen den Wert von vor 7 Tagen.',
   explainBaselines:
     'Im Modus Erklären arbeitet das Modell ohne Kenntnis des Vortags, wenn du keinen früheren NO₂-Wert gewählt hast. Die Persistenz ist dann nur eine Referenz: Sie beantwortet eine andere Frage.',
-  trainTestTitle: 'Training gegen Test',
+  trainTestTitle: 'Fehler im Training gegen Fehler im Test',
   trainTestText: (train: string, test: string) =>
-    `Mittlerer Fehler des Modells auf den Trainingstagen: ${train}, auf den Testtagen: ${test}. Ein deutlich kleinerer Fehler im Training spricht für Überanpassung.`,
+    `Mittlerer Fehler des Modells auf den Trainingstagen, mit denen es angepasst wurde: ${train} µg/m³. Auf den ungesehenen Testtagen: ${test} µg/m³.`,
+  trainTestNote:
+    'Der Trainingsfehler ist optimistisch, weil das Modell diese Tage kennt. Er zeigt nur, ob sich das Modell zu stark an die Trainingstage angepasst hat (Überanpassung). Ein fairer Leistungsvergleich ist allein der Testfehler.',
+  belowZeroNone: 'Keine Prognose lag unter null.',
+  belowZeroSome: (count: number, total: number, percent: string, lowest: string) =>
+    `Das Modell sagte an ${count} von ${total} Testtagen (${percent} %) einen Wert unter null voraus, der tiefste war ${lowest} µg/m³. Ein NO₂-Wert unter null kann es nicht geben. Die Werte sind nicht verändert oder abgeschnitten: Das ist eine Grenze dieses Modells.`,
+  belowZeroKey: 'Rote Punkte: Prognose unter null',
   actualTitle: 'Messung und Prognose',
   actualLabel: (station: string) => `Messung und Prognose für ${station} über den Testzeitraum`,
   actual: 'Messung',
@@ -180,7 +186,7 @@ export const PGE = {
   limitsTitle: 'Grenzen dieser Rechnung',
   limitsShort: 'Eine Aufteilung, ein Modell, keine Unsicherheitsangabe.',
   limitsMore:
-    'Es gibt genau eine Aufteilung in Training und Test und kein Wiederholen mit anderen Zeiträumen. Daher gibt es keine Angabe, wie unsicher die Zahlen sind. Das Modell lernt nur einmal und wird im Test nicht nachtrainiert. Ein Trend im linearen Modell wird in die Zukunft fortgeschrieben und kann dort danebenliegen. Das Boosting ist eine eigene Umsetzung im Browser: ähnlich wie scikit-learn, aber nicht identisch. Das Wetter gilt für ganz Zentrallondon, nicht für die einzelne Station.',
+    'Es gibt genau eine Aufteilung in Training und Test und kein Wiederholen mit anderen Zeiträumen. Daher gibt es keine Angabe, wie unsicher die Zahlen sind. Das Modell lernt nur einmal und wird im Test nicht nachtrainiert. Ein Trend im linearen Modell wird in die Zukunft fortgeschrieben und kann dort danebenliegen. Das lineare Modell kann Werte unter null vorhersagen, die es in der Wirklichkeit nicht gibt. Sie werden gezählt und nicht abgeschnitten. Die Wichtigkeit der Merkmale wird auf denselben Testtagen berechnet wie die Bewertung; die Testtage dienen damit nicht mehr allein der unabhängigen Prüfung, für eine strengere Auswertung bräuchte man zusätzlich eine eigene Validierungsmenge. Das Boosting ist eine eigene Umsetzung im Browser: ähnlich wie scikit-learn, aber nicht identisch. Das Wetter gilt für ganz Zentrallondon, nicht für die einzelne Station.',
   tooltipDay: 'Tag',
   seriesToggle: 'Anzeigen',
   tableCaption: (what: string) => `Tabelle: ${what}`,

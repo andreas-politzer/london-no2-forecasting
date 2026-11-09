@@ -5,7 +5,7 @@ import { MONTH_SHORT, WEEKDAY_SHORT } from '../labels'
 import type { Engine } from '../adapter'
 import { FEATURE_LABELS, METHOD_LABELS, MODEL_KIND_LABELS, PGE } from './expLabels'
 import { BarRows, ErrorDots, ErrorHistogram, SeriesPlot, type PlotLine } from './ResultCharts'
-import { baselinesCoincide, errorsOf, germanDate, methodRows, type Done, type MethodKey } from './experimentLogic'
+import { baselinesCoincide, belowZero, errorsOf, germanDate, methodRows, type Done, type MethodKey } from './experimentLogic'
 
 const MINUS = '−'
 const signed = (value: number, digits = 1) =>
@@ -48,7 +48,7 @@ export default function Results({ engine, result, stale }: Props) {
   const errors = errorsOf(result.test.model, result.test.actual)
   const lines: PlotLine[] = [
     { key: 'actual', name: PGE.actual, color: COLORS.actual, values: result.test.actual, width: 1.4 },
-    { key: 'model', name: METHOD_LABELS.model, color: COLORS.model, values: result.test.model, width: 1.8 },
+    { key: 'model', name: METHOD_LABELS.model, color: COLORS.model, values: result.test.model, width: 1.8, flagBelowZero: true },
     ...BASELINES.filter((key) => shown[key]).map((key) => ({
       key,
       name: METHOD_LABELS[key].split(' (')[0],
@@ -57,6 +57,7 @@ export default function Results({ engine, result, stale }: Props) {
       dash: '4 3',
     })),
   ]
+  const negative = belowZero(result.test.model)
   const modeLabel = spec.mode === 'explain' ? PGE.explain : PGE.forecast
   const importance = result.importance.map((item) => ({
     key: item.feature,
@@ -135,6 +136,7 @@ export default function Results({ engine, result, stale }: Props) {
         <p className="pgx-hint">
           {PGE.trainTestText(formatValue(result.scores.modelTrain.mae), formatValue(result.scores.model.mae))}
         </p>
+        <p className="pgx-note">{PGE.trainTestNote}</p>
       </div>
 
       <div className="pgx-chart">
@@ -155,6 +157,17 @@ export default function Results({ engine, result, stale }: Props) {
           ))}
         </div>
         <SeriesPlot firstDay={first} days={days} lines={lines} label={PGE.actualLabel(spec.station)} />
+        {negative.count > 0 && <p className="pgx-note"><span className="pge-swatch" style={{ background: '#c62828' }} aria-hidden="true" />{PGE.belowZeroKey}</p>}
+        <p className={negative.count > 0 ? 'pgx-hint pge-warn' : 'pgx-note'}>
+          {negative.count === 0
+            ? PGE.belowZeroNone
+            : PGE.belowZeroSome(
+                negative.count,
+                negative.total,
+                formatNumber((negative.count / negative.total) * 100, 1),
+                signed(negative.lowest ?? 0, 1),
+              )}
+        </p>
       </div>
 
       <div className="pgx-chart">

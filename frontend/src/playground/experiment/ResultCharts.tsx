@@ -15,6 +15,7 @@ export type PlotLine = {
   values: ArrayLike<number>
   dash?: string
   width?: number
+  flagBelowZero?: boolean // mark the days under zero in red
 }
 
 type SeriesProps = {
@@ -80,6 +81,7 @@ export function SeriesPlot({ firstDay, days, lines, label }: SeriesProps) {
           <text className="pgx-caption" x={M.left} y={M.top + 2} dy="-0.1em">
             {PGE.axisValue}
           </text>
+          {domain[0] < 0 && <line x1={M.left} x2={w - M.right} y1={y(0)} y2={y(0)} stroke="var(--ink)" strokeWidth={1} />}
           {lines.map((line) => (
             <path
               key={line.key}
@@ -91,6 +93,13 @@ export function SeriesPlot({ firstDay, days, lines, label }: SeriesProps) {
               strokeLinejoin="round"
             />
           ))}
+          {lines.map((line) =>
+            line.flagBelowZero
+              ? days.map((day, i) =>
+                  line.values[i] < 0 ? <circle key={`${line.key}-${day}`} cx={x(day)} cy={y(line.values[i])} r={2.4} fill="#c62828" /> : null,
+                )
+              : null,
+          )}
           {hover !== null && (
             <g>
               <line x1={x(days[hover])} x2={x(days[hover])} y1={M.top} y2={HEIGHT - M.bottom} stroke="var(--muted)" strokeDasharray="3 3" />
