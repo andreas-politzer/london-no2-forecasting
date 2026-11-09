@@ -161,13 +161,21 @@ def run(spec):
     tr0, tr1 = (day_index(d) for d in spec["trainPeriod"])
     te0, te1 = (day_index(d) for d in spec["testPeriod"])
     lag = 7 * math.ceil(horizon / 7)
+    last_known = horizon
 
     def measured(lo, hi):
         return [t for t in range(max(0, lo), min(hi, N - 1) + 1) if not np.isnan(target[t])]
 
     train_rows = complete_rows(cols, target, tr0, tr1)
     test_complete = complete_rows(cols, target, te0, te1)
-    test_rows = np.array([t for t in test_complete if t - lag >= 0 and not np.isnan(target[t - lag])], dtype=int)
+    test_rows = np.array(
+        [
+            t for t in test_complete
+            if t - lag >= 0 and not np.isnan(target[t - lag])
+            and t - last_known >= 0 and not np.isnan(target[t - last_known])
+        ],
+        dtype=int,
+    )
     counts = {
         "trainMeasured": len(measured(tr0, tr1)),
         "trainRows": int(len(train_rows)),
@@ -181,6 +189,7 @@ def run(spec):
     train_mean = float(np.mean([target[t] for t in measured(tr0, tr1)]))
     out["mean"] = scores(yte, np.full(len(yte), train_mean))
     out["naive"] = scores(yte, np.array([target[t - lag] for t in test_rows]))
+    out["persistence"] = scores(yte, np.array([target[t - last_known] for t in test_rows]))
     if kind == "linear":
         predict, keep, coef = ridge(xtr, ytr, spec["params"]["ridge"])
         out["model"] = scores(yte, predict(xte))
@@ -236,4 +245,4 @@ if __name__ == "__main__":
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps({"cases": cases}, indent=1), encoding="utf-8")
     for c in cases:
-        print(c["spec"]["name"], c["counts"]["testRows"], {k: round(c[k]["mae"], 3) for k in ("model", "mean", "naive")})
+        print(c["spec"]["name"], c["counts"]["testRows"], {k: round(c[k]["mae"], 3) for k in ("model", "mean", "naive", "persistence")})

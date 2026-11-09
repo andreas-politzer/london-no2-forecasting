@@ -14,6 +14,7 @@ import {
   effectiveHorizon,
   featureProblem,
   naiveLag,
+  persistenceLag,
   type ModelSpec,
 } from '../src/playground/modelcore/types'
 
@@ -92,6 +93,7 @@ describe('the leakage rule for ingredients', () => {
     expect(effectiveHorizon({ mode: 'explain', horizon: 30 })).toBe(1)
     expect(effectiveHorizon({ mode: 'forecast', horizon: 30 })).toBe(30)
     expect([1, 7, 8, 14, 30].map(naiveLag)).toEqual([7, 7, 14, 14, 35])
+    expect([1, 7, 30].map(persistenceLag)).toEqual([1, 7, 30])
   })
 })
 
@@ -236,7 +238,7 @@ describe('permutation importance', () => {
 })
 
 describe('an experiment', () => {
-  it('fills the counts consistently and scores two baselines on the same days', () => {
+  it('fills the counts consistently and scores three baselines on the same days', () => {
     const r = ok(runExperiment(engine, spec()))
     const c = r.counts
     expect(c.testRows).toBeLessThanOrEqual(c.testComplete)
@@ -248,6 +250,15 @@ describe('an experiment', () => {
     expect(r.test.model).toHaveLength(c.testRows)
     expect(r.scores.model.mae).toBeCloseTo(scores(r.test.actual, r.test.model).mae, 12)
     expect(r.scores.naive.mae).toBeCloseTo(scores(r.test.actual, r.test.naive).mae, 12)
+    // The baselines repeat what was known at the origin, day by day.
+    const series = engine.input.no2.KC1
+    r.test.day.forEach((t, i) => {
+      expect(r.test.persistence[i]).toBe(series[t - r.persistenceLag])
+      expect(r.test.naive[i]).toBe(series[t - r.naiveLag])
+    })
+    expect(r.scores.persistence.mae).toBeCloseTo(scores(r.test.actual, r.test.persistence).mae, 12)
+    expect(r.test.persistence).toHaveLength(c.testRows)
+    expect(r.persistenceLag).toBe(7)
     expect(r.horizon).toBe(7)
     expect(r.naiveLag).toBe(7)
     expect(r.importance.map((i) => i.feature).sort()).toEqual([...spec().features].sort())
@@ -330,6 +341,59 @@ describe('nothing from the future leaks into a forecast', () => {
   }
 })
 
+describe('training rows are built for the same forecast origin as the test rows', () => {
+  // One dataset builder serves training and test, with the same horizon. A row for
+  // day t may only look at NO2 up to day t - horizon, so a 30-day model is also
+  // trained on what was known 30 days before each training target.
+  const cut = 3000
+  const cases: { horizon: number; features: string[] }[] = [
+    { horizon: 1, features: ['lag1', 'lag7', 'lag14', 'lag28', 'mean7', 'mean28'] },
+    { horizon: 7, features: ['lag7', 'lag14', 'lag28', 'mean7', 'mean28'] },
+    { horizon: 30, features: ['mean7', 'mean28'] },
+  ]
+  for (const { horizon, features } of cases) {
+    it(`horizon ${horizon}: a row only changes when NO2 up to day t - ${horizon} changes`, () => {
+      const a = buildDataset(engine, 'KC1', features, 'ordinal', horizon)
+      const b = buildDataset(tampered(cut, 'no2'), 'KC1', features, 'ordinal', horizon)
+      let same = 0
+      let moved = 0
+      for (let t = 100; t < 6000; t += 1) {
+        for (let j = 0; j < a.columns.length; j += 1) {
+          const x = a.columns[j].values[t]
+          const y = b.columns[j].values[t]
+          if (t - horizon < cut) {
+            // Nothing the row may see has changed, so the row must be identical.
+            expect(Object.is(x, y)).toBe(true)
+            same += 1
+          } else if (!Object.is(x, y)) moved += 1
+        }
+      }
+      expect(same).toBeGreaterThan(1000)
+      expect(moved).toBeGreaterThan(100) // the check can fail: later rows do react
+    })
+    it(`horizon ${horizon}: the features of a training row are the 'known ${horizon} days earlier' ones`, () => {
+      const rows = completeRows(buildDataset(engine, 'KC1', features, 'ordinal', horizon), 1000, 2000)
+      const longer = buildDataset(engine, 'KC1', ['mean7'], 'ordinal', horizon)
+      const series = engine.input.no2.KC1
+      for (const t of rows.slice(0, 40)) {
+        const window = series.slice(t - horizon - 6, t - horizon + 1).filter((v): v is number => v !== null)
+        expect(longer.columns[0].values[t]).toBeCloseTo(window.reduce((sum, v) => sum + v, 0) / window.length, 12)
+      }
+    })
+  }
+  it('a 30-day model is a different model than a 1-day model on the same days', () => {
+    const one = buildDataset(engine, 'KC1', ['mean7'], 'ordinal', 1)
+    const thirty = buildDataset(engine, 'KC1', ['mean7'], 'ordinal', 30)
+    let different = 0
+    for (let t = 500; t < 600; t += 1) if (one.columns[0].values[t] !== thirty.columns[0].values[t]) different += 1
+    expect(different).toBeGreaterThan(90)
+  })
+  it('a 30-day experiment refuses lags that would peek closer than 30 days', () => {
+    const r = runExperiment(engine, spec({ horizon: 30, features: ['mean7', 'lag28'] }))
+    expect(r.ok).toBe(false)
+  })
+})
+
 describe('against the independent Python calculation', () => {
   type Reference = {
     spec: ModelSpec & { name: string }
@@ -338,6 +402,7 @@ describe('against the independent Python calculation', () => {
     modelTrain: { mae: number; rmse: number; bias: number }
     mean: { mae: number; rmse: number; bias: number }
     naive: { mae: number; rmse: number; bias: number }
+    persistence: { mae: number; rmse: number; bias: number }
     coefficients?: Record<string, number>
   }
   const reference: { cases: Reference[] } = JSON.parse(
@@ -355,6 +420,7 @@ describe('against the independent Python calculation', () => {
       for (const key of ['mae', 'rmse', 'bias'] as const) {
         expect(r.scores.mean[key]).toBeCloseTo(ref.mean[key], 8)
         expect(r.scores.naive[key]).toBeCloseTo(ref.naive[key], 8)
+        expect(r.scores.persistence[key]).toBeCloseTo(ref.persistence[key], 8)
       }
       if (modelSpec.kind === 'linear') {
         for (const key of ['mae', 'rmse', 'bias'] as const) {

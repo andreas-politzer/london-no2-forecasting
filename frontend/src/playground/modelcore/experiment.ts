@@ -12,6 +12,7 @@ import {
   effectiveHorizon,
   featureProblem,
   naiveLag,
+  persistenceLag,
   type FeatureProblem,
   type ModelSpec,
 } from './types'
@@ -54,8 +55,16 @@ export type ExperimentResult =
       horizon: number
       naiveLag: number
       counts: Counts
-      scores: { model: Scores; mean: Scores; naive: Scores; modelTrain: Scores }
-      test: { day: number[]; actual: number[]; model: number[]; mean: number[]; naive: number[] }
+      persistenceLag: number
+      scores: { model: Scores; mean: Scores; naive: Scores; persistence: Scores; modelTrain: Scores }
+      test: {
+        day: number[]
+        actual: number[]
+        model: number[]
+        mean: number[]
+        naive: number[]
+        persistence: number[]
+      }
       train: { day: number[]; actual: number[]; model: number[] }
       importance: Importance[] // largest first
       coefficients: { intercept: number; items: Coefficient[] } | null
@@ -105,12 +114,16 @@ export function runExperiment(engine: Engine, spec: ModelSpec): ExperimentResult
   const encoding = spec.kind === 'linear' ? 'dummies' : 'ordinal'
   const dataset = buildDataset(engine, spec.station, spec.features, encoding, horizon)
   const lag = naiveLag(horizon)
+  const lastKnown = persistenceLag(horizon)
 
   const trainMeasured = measuredIn(dataset, trainFrom, trainTo)
   const trainRows = completeRows(dataset, trainFrom, trainTo)
   const testMeasured = measuredIn(dataset, testFrom, testTo)
   const testComplete = completeRows(dataset, testFrom, testTo)
-  const testRows = testComplete.filter((t) => t - lag >= 0 && Number.isFinite(dataset.target[t - lag]))
+  // Every method is scored on the same days: the model's ingredients, the seasonal-naive
+  // input and the last known value must all exist.
+  const known = (t: number, back: number) => t - back >= 0 && Number.isFinite(dataset.target[t - back])
+  const testRows = testComplete.filter((t) => known(t, lag) && known(t, lastKnown))
 
   const counts: Counts = {
     trainDays: Math.max(0, Math.min(trainTo, dataset.days - 1) - Math.max(0, trainFrom) + 1),
@@ -171,6 +184,7 @@ export function runExperiment(engine: Engine, spec: ModelSpec): ExperimentResult
   trainMean /= trainMeasured.length
   const meanPred = new Float64Array(testRows.length).fill(trainMean)
   const naivePred = Float64Array.from(testRows, (t) => dataset.target[t - lag])
+  const persistencePred = Float64Array.from(testRows, (t) => dataset.target[t - lastKnown])
 
   const groups: { feature: string; columns: number[] }[] = []
   dataset.columns.forEach((column, j) => {
@@ -190,11 +204,13 @@ export function runExperiment(engine: Engine, spec: ModelSpec): ExperimentResult
     spec,
     horizon,
     naiveLag: lag,
+    persistenceLag: lastKnown,
     counts,
     scores: {
       model: scores(yTest, predTest),
       mean: scores(yTest, meanPred),
       naive: scores(yTest, naivePred),
+      persistence: scores(yTest, persistencePred),
       modelTrain: scores(yTrain, predTrain),
     },
     test: {
@@ -203,6 +219,7 @@ export function runExperiment(engine: Engine, spec: ModelSpec): ExperimentResult
       model: Array.from(predTest),
       mean: Array.from(meanPred),
       naive: Array.from(naivePred),
+      persistence: Array.from(persistencePred),
     },
     train: { day: trainRows, actual: Array.from(yTrain), model: Array.from(predTrain) },
     importance,

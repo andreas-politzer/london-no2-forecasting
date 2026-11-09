@@ -104,3 +104,9 @@ export function effectiveHorizon(spec: Pick<ModelSpec, 'mode' | 'horizon'>): num
 export function naiveLag(horizon: number): number {
   return 7 * Math.ceil(horizon / 7)
 }
+
+// The persistence baseline repeats the last value known at the forecast origin,
+// which is `horizon` days before the day.
+export function persistenceLag(horizon: number): number {
+  return horizon
+}
