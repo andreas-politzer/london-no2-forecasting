@@ -2,10 +2,14 @@ import {
   useEffect,
   useMemo,
   useRef,
+  useState,
   type KeyboardEvent as ReactKeyboardEvent,
 } from 'react'
 import { PLAYGROUND, UI } from '../texts'
 import { usePlayground } from './data'
+import { buildIntro } from './intro/introContent'
+import { introFactsFrom } from './intro/introFacts'
+import IntroDialog from './intro/IntroDialog'
 import Workspace from './Workspace'
 
 type Props = {
@@ -19,8 +23,19 @@ type Props = {
 export default function PlaygroundWindow({ stations, initialStation, onClose }: Props) {
   const rootRef = useRef<HTMLDivElement>(null)
   const closeRef = useRef<HTMLButtonElement>(null)
+  const infoRef = useRef<HTMLButtonElement>(null)
+  const [introOpen, setIntroOpen] = useState(false)
   const codes = useMemo(() => stations.map((s) => s.code), [stations])
   const state = usePlayground(codes)
+  const intro = useMemo(
+    () => (state.status === 'ready' ? buildIntro(introFactsFrom(state.data, stations.length)) : null),
+    [state, stations.length],
+  )
+
+  function closeIntro() {
+    setIntroOpen(false)
+    infoRef.current?.focus()
+  }
 
   useEffect(() => {
     const opener = document.activeElement as HTMLElement | null
@@ -63,9 +78,25 @@ export default function PlaygroundWindow({ stations, initialStation, onClose }: 
     >
       <header className="pgw-head">
         <div>
-          <h2 id="pgw-title" className="panel-title">
-            {PLAYGROUND.title}
-          </h2>
+          <div className="pgw-titlerow">
+            <h2 id="pgw-title" className="panel-title">
+              {PLAYGROUND.title}
+            </h2>
+            <button
+              ref={infoRef}
+              type="button"
+              className="pgw-info"
+              aria-haspopup="dialog"
+              aria-label={PLAYGROUND.introOpen}
+              disabled={intro === null}
+              onClick={() => setIntroOpen(true)}
+            >
+              <span className="pgw-info-i" aria-hidden="true">
+                i
+              </span>
+              <span className="pgw-info-text">{PLAYGROUND.introButton}</span>
+            </button>
+          </div>
           <p className="panel-sub">{PLAYGROUND.tagline}</p>
         </div>
         <button
@@ -78,6 +109,8 @@ export default function PlaygroundWindow({ stations, initialStation, onClose }: 
           ×
         </button>
       </header>
+
+      {introOpen && intro && <IntroDialog intro={intro} onClose={closeIntro} />}
 
       <div className="pgw-body">
         {state.status === 'loading' && <p className="tab-note">{UI.loading}</p>}

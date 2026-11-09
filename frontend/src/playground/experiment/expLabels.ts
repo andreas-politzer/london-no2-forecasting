@@ -136,21 +136,21 @@ export const PGE = {
   stabilised: 'Zwei Merkmale sind sich so ähnlich, dass die Rechnung leicht stabilisiert werden musste.',
   compareTitle: 'Modell gegen einfache Verfahren',
   compareIntro:
-    'Alle Verfahren werden auf genau denselben Testtagen bewertet. Der Fehler ist der mittlere Abstand zur Messung in µg/m³ (kleiner ist besser).',
+    'Alle Verfahren werden auf genau denselben Testtagen bewertet. Der Fehler ist der mittlere absolute Fehler (MAE): die durchschnittliche Größe der Abweichung zur Messung in µg/m³, ohne Rücksicht auf die Richtung (kleiner ist besser).',
   colMethod: 'Verfahren',
-  colMae: 'mittlerer Fehler',
+  colMae: 'Mittlerer absoluter Fehler (MAE)',
   colRmse: 'RMSE',
-  colBias: 'Verzerrung',
+  colBias: 'Verzerrung (Bias)',
   colVs: 'gegen Persistenz',
   biasHint: 'Verzerrung = Prognose minus Messung im Mittel. Über null heißt: zu hoch.',
-  rmseHint: 'RMSE bestraft große Fehler stärker als der mittlere Fehler.',
+  rmseHint: 'RMSE bestraft große Fehler stärker als der MAE.',
   coincide:
     'Bei 7 Tagen Horizont sind Persistenz und Saisonal naiv dasselbe Verfahren: beide nehmen den Wert von vor 7 Tagen.',
   explainBaselines:
     'Im Modus Erklären arbeitet das Modell ohne Kenntnis des Vortags, wenn du keinen früheren NO₂-Wert gewählt hast. Die Persistenz ist dann nur eine Referenz: Sie beantwortet eine andere Frage.',
   trainTestTitle: 'Fehler im Training gegen Fehler im Test',
   trainTestText: (train: string, test: string) =>
-    `Mittlerer Fehler des Modells auf den Trainingstagen, mit denen es angepasst wurde: ${train} µg/m³. Auf den ungesehenen Testtagen: ${test} µg/m³.`,
+    `Mittlerer absoluter Fehler (MAE) des Modells auf den Trainingstagen, mit denen es angepasst wurde: ${train} µg/m³. Auf den ungesehenen Testtagen: ${test} µg/m³.`,
   trainTestNote:
     'Der Trainingsfehler ist optimistisch, weil das Modell diese Tage kennt. Er zeigt nur, ob sich das Modell zu stark an die Trainingstage angepasst hat (Überanpassung). Ein fairer Leistungsvergleich ist allein der Testfehler.',
   belowZeroNone: 'Keine Prognose lag unter null.',
@@ -177,10 +177,10 @@ export const PGE = {
   importanceShort:
     'Zeigt, worauf dieses Modell auf diesen Testtagen setzt. Nicht, was das NO₂ in London verursacht.',
   importanceMore:
-    'Verfahren: Für ein Merkmal werden die Testtage mit einer festen Zufallszahl vermischt, und es wird gemessen, wie viel schlechter das schon trainierte Modell dann vorhersagt. Das ist eine nachträgliche Analyse des fertigen Modells auf den Testdaten, nicht Teil des Lernens. Bei ähnlichen Merkmalen (etwa den drei Temperaturen) verteilt sich die Wichtigkeit auf alle oder wird unterschätzt, weil das Modell auf ein anderes ausweichen kann. Werte um null, auch leicht negative, bedeuten: kein erkennbarer Beitrag. Ein kleiner Wert heißt nur: für dieses Modell auf diesen Tagen kaum nötig. Ein großer Wert heißt nicht, dass das Merkmal das NO₂ verursacht.',
+    'Verfahren: Für ein Merkmal werden die Testtage mit einer festen Zufallszahl vermischt, und es wird gemessen, um wie viel der mittlere absolute Fehler (MAE) des schon trainierten Modells dann wächst. Das ist eine nachträgliche Analyse des fertigen Modells auf den Testdaten, nicht Teil des Lernens. Bei ähnlichen Merkmalen (etwa den drei Temperaturen) verteilt sich die Wichtigkeit auf alle oder wird unterschätzt, weil das Modell auf ein anderes ausweichen kann. Werte um null, auch leicht negative, bedeuten: kein erkennbarer Beitrag. Ein kleiner Wert heißt nur: für dieses Modell auf diesen Tagen kaum nötig. Ein großer Wert heißt nicht, dass das Merkmal das NO₂ verursacht.',
   importanceNote:
     'Nachträgliche Analyse des fertig trainierten Modells auf den Testtagen. Ähnliche Merkmale teilen sich ihre Wichtigkeit.',
-  importanceAxis: 'Fehler wächst um (µg/m³)',
+  importanceAxis: 'MAE wächst um (µg/m³)',
   noCause: 'Zusammenhang, keine Ursache.',
   topNote: 'Das Modell beschreibt Muster in den Daten. Was es nutzt, ist nicht automatisch das, was das NO₂ verursacht.',
   limitsTitle: 'Grenzen dieser Rechnung',
