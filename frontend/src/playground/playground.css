@@ -116,3 +116,15 @@
 .pgx-brushband { fill: var(--navy); opacity: 0.14; pointer-events: none; }
 .pgx-cross { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 3 3; }
 .pgx-strip { fill: var(--ink); }
+
+/* heatmaps, calendar, wind rose, scatter */
+.pgx-scrollx { overflow-x: auto; max-width: 100%; }
+.pgx-heading { fill: var(--ink); cursor: pointer; }
+.pgx-heading:hover { fill: var(--navy); text-decoration: underline; }
+.pgx-heading-on { font-weight: 700; fill: var(--navy); }
+.pgx-heading:focus-visible { outline: 2px solid var(--navy); outline-offset: 2px; }
+.pgx-ring { fill: none; stroke: var(--line); stroke-width: 1; }
+.pgx-day { cursor: pointer; }
+.pgx-day:hover { stroke: var(--navy); stroke-width: 1.5; }
+.pgx-ramp { display: inline-block; width: 120px; height: 10px; border-radius: 3px; vertical-align: middle; }
+.pgx-inline { display: flex; align-items: center; gap: 8px; flex-direction: row; font-size: 0.85rem; }

@@ -15,6 +15,19 @@ export const VARIABLE_LABELS: Record<NumericVariable, string> = {
   relative_humidity_2m_mean: 'Luftfeuchte (%)',
 }
 
+export const VARIABLE_SHORT: Record<NumericVariable, string> = {
+  no2: 'NO₂',
+  temperature_2m_mean: 'Temp Ø',
+  temperature_2m_max: 'Temp max',
+  temperature_2m_min: 'Temp min',
+  wind_speed_10m_max: 'Wind max',
+  wind_speed_10m_mean: 'Wind Ø',
+  wind_direction_10m_dominant: 'Richtung',
+  precipitation_sum: 'Regen',
+  snowfall_sum: 'Schnee',
+  relative_humidity_2m_mean: 'Feuchte',
+}
+
 export const GROUPING_LABELS: Record<Grouping, string> = {
   none: 'ohne Gruppierung',
   windClass: 'Windstärke',
@@ -187,13 +200,75 @@ export const PGU = {
   distAxisShare: 'Anteil der Tage (%)',
   distAxisDensity: 'Dichte (% je Einheit)',
   distMarkedSeries: 'dunkel: markierte Tage',
-  distMoreGroups: (limit: number) => `Mehr als ${limit} Gruppen: gezeigt werden die ersten ${limit}.`,
   distFirstStation: (code: string) => `Mit Gruppierung zeigt dieses Diagramm nur die Station ${code}.`,
   distNoValues: 'keine Werte',
   distNone: 'Keine Werte in der Auswahl.',
   distHint: 'Ziehen markiert einen Wertebereich. Mit der Tastatur: Pfeiltasten bewegen, Eingabe setzt Anfang und Ende.',
   distAllDays: 'Alle Tage',
   distBin: (from: string, to: string) => `${from} bis ${to}`,
+
+  singleStation: (code: string) => `Dieses Diagramm zeigt nur die Station ${code}.`,
+
+  boxBox: 'Boxplot',
+  boxViolin: 'Violine',
+  boxHint:
+    'Die Box reicht vom unteren bis zum oberen Viertel der Tage, der dicke Strich ist der Median. Die Linien reichen bis zum letzten Wert innerhalb des 1,5-Fachen der Boxhöhe, Punkte darüber sind Ausreißer.',
+  boxHintViolin:
+    'Je breiter die Form, desto häufiger kommt der Wert vor. Der dunkle Strich ist der Median. Gestrichelt heißt: wenige Tage.',
+
+  scatterTitle: 'Streudiagramm',
+  scatterAgainst: 'gegen',
+  scatterAll: 'alle Tage',
+  scatterFewDays: 'wenige Tage',
+  scatterManyDays: (n: number) => `bis ${n.toLocaleString('de-DE')} Tage je Feld`,
+  scatterHint:
+    'Jeder Punkt ist ein Tag. Die Linie ist eine einfache lineare Trendlinie, R² sagt, wie viel der Schwankung sie erklärt. Ein Zusammenhang ist noch keine Ursache. Ziehen markiert einen Bereich.',
+  scatterRangeNote: 'Ein markierter NO₂-Bereich gilt für den Mittelwert der gewählten Stationen.',
+
+  heatCross: 'Kombinationen',
+  heatCorrelation: 'Korrelation',
+  heatSpearman: 'Rangkorrelation nach Spearman',
+  heatPearson: 'Pearson',
+  heatCrossNote:
+    'Je dunkler ein Feld, desto höher der Mittelwert. Ein Klick auf eine Überschrift markiert diese Tage.',
+  heatHatched: 'Schraffiert heißt: wenige Tage.',
+  heatCorrelationNote:
+    'Werte nahe 1 oder -1 heißen: die Größen laufen meist gemeinsam oder gegenläufig. Nahe 0 heißt: kein gleichmäßiger Zusammenhang. Eine Korrelation ist keine Ursache.',
+  heatMethod: 'Methode',
+  heatRows: 'Zeilen',
+  heatForm: 'Ansicht',
+  heatFormCross: 'Kombinationen',
+  heatFormCorrelation: 'Korrelation',
+
+  roseTitle: 'Windrose',
+  roseDays: 'Windrichtung: Anteil der Tage',
+  roseNo2: 'NO₂ je Windrichtung',
+  roseSpeed: 'Windstärke',
+  roseSpeedNames: ['ruhig', 'mittel', 'windig'],
+  roseShow: 'Anzeige',
+  roseShowDays: 'Anteil der Tage',
+  roseShowNo2: 'NO₂ je Richtung',
+  roseDaysNote: (total: number) =>
+    `Die Richtung ist die vorherrschende des Tages, ${total.toLocaleString('de-DE')} Tage mit Richtung und Geschwindigkeit. Ein Klick markiert die Tage dieser Richtung.`,
+  roseNo2Note: 'Länge der Keile: mittleres NO₂ an Tagen mit dieser Windrichtung.',
+
+  calTitle: 'Kalender',
+  calYear: 'Jahr',
+  calOutside: 'außerhalb der Auswahl',
+  calHint: 'Ein Klick markiert einen Tag, Umschalt plus Klick den Zeitraum bis dahin. Mit der Tastatur: Zeitraum im Filter wählen.',
+  calMarked: 'Dunkle Punkte sind Tage, die in anderen Diagrammen markiert sind.',
+
+  yearGrid: 'Jahresvergleich',
+  yearLines: 'Jahresvergleich als Linien',
+  yearGridNote: (n: number) => `Je Monat der Mittelwert. Schraffiert heißt: weniger als ${n} Werte im Monat.`,
+  yearLinesNote: (n: number) => `Offene Punkte: weniger als ${n} Werte im Monat. Ältere Jahre sind heller, neuere dunkler.`,
+  formLabel: 'Darstellung',
+  formBox: 'Boxplot',
+  formViolin: 'Violine',
+  formPoints: 'Punkte',
+  formHexbin: 'Felder (Hexagone)',
+  formGrid: 'Tabelle',
+  formLines: 'Linien',
 
   sessionShare: 'Link kopieren',
   sessionShared: 'Link kopiert. Er enthält die ganze Einstellung.',
