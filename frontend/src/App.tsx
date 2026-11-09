@@ -9,7 +9,8 @@ import './App.css'
 import HistoryTab from './HistoryTab'
 import ModelsTab from './ModelsTab'
 import PrognoseTab from './PrognoseTab'
-import { PG, UI } from './texts'
+import PlaygroundWindow from './playground/PlaygroundWindow'
+import { PG, PLAYGROUND, UI } from './texts'
 
 const MAP_W = 3000
 const MAP_H = 1998
@@ -124,6 +125,7 @@ export default function App() {
   const [selected, setSelected] = useState<Station | null>(null)
   const [tab, setTab] = useState<Tab>('forecast')
   const [showSources, setShowSources] = useState(false)
+  const [playgroundOpen, setPlaygroundOpen] = useState(false)
   const mapRef = useRef<HTMLDivElement>(null)
   const aspect = useAspect(mapRef)
 
@@ -319,6 +321,14 @@ export default function App() {
                   {t.label}
                 </button>
               ))}
+              <button
+                type="button"
+                className="tab tab-playground"
+                aria-haspopup="dialog"
+                onClick={() => setPlaygroundOpen(true)}
+              >
+                {PLAYGROUND.tab} ↗
+              </button>
             </div>
 
             <div className="panel-body">
@@ -333,6 +343,14 @@ export default function App() {
           </>
         )}
       </aside>
+
+      {playgroundOpen && (
+        <PlaygroundWindow
+          stations={STATIONS}
+          initialStation={selected?.code ?? 'KC1'}
+          onClose={() => setPlaygroundOpen(false)}
+        />
+      )}
     </div>
   )
 }

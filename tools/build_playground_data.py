@@ -26,6 +26,7 @@ from __future__ import annotations
 import hashlib
 import json
 import shutil
+import statistics
 import sys
 from datetime import date, timedelta
 from pathlib import Path
@@ -106,6 +107,60 @@ def corona_code(day: date) -> int:
     if CORONA_PERIOD[0] <= day <= CORONA_PERIOD[1]:
         return 1
     return 0
+
+
+def class_counts(series: dict, calendar: dict, no2: dict) -> dict:
+    """Quartiles and day counts per class (all days and measured NO2 days)."""
+    wind = series["wind_speed_10m_mean"]
+    q1, _, q3 = statistics.quantiles(wind, n=4, method="inclusive")
+    tmax, tmin = series["temperature_2m_max"], series["temperature_2m_min"]
+    rain, snow = series["precipitation_sum"], series["snowfall_sum"]
+    weekday, holiday = calendar["weekday"], calendar["holiday"]
+    tests = {
+        "wind_calm": lambda i: wind[i] <= q1,
+        "wind_windy": lambda i: wind[i] >= q3,
+        "rain_dry": lambda i: rain[i] < 1,
+        "rain_wet": lambda i: rain[i] >= 1,
+        "rain_very_wet": lambda i: rain[i] >= 10,
+        "rain_extreme": lambda i: rain[i] >= 20,
+        "snow_gt0": lambda i: snow[i] > 0,
+        "snow_ge0.1": lambda i: snow[i] >= 0.1,
+        "snow_ge0.5": lambda i: snow[i] >= 0.5,
+        "snow_ge1": lambda i: snow[i] >= 1,
+        "frost_day": lambda i: tmin[i] < 0,
+        "ice_day": lambda i: tmax[i] < 0,
+        "summer_day": lambda i: tmax[i] > 25,
+        "bank_holiday": lambda i: holiday[i] == 1,
+        "weekend": lambda i: holiday[i] == 0 and weekday[i] >= 5,
+        "workday": lambda i: holiday[i] == 0 and weekday[i] < 5,
+    }
+    for k in range(3):
+        tests[f"corona_{k}"] = lambda i, k=k: calendar["corona"][i] == k
+    for k in range(4):
+        tests[f"ulez_{k}"] = lambda i, k=k: calendar["ulez"][i] == k
+    result = {
+        "wind_quartiles_kmh": [round(q1, 2), round(q3, 2)],
+        "thresholds": {
+            "wind_calm_max_kmh": round(q1, 2),
+            "wind_windy_min_kmh": round(q3, 2),
+            "rain_wet_min_mm": 1,
+            "rain_very_wet_min_mm": 10,
+            "snow_day_min_cm": 0.5,
+            "frost_day_tmin_below": 0,
+            "summer_day_tmax_above": 25,
+            "min_days_per_group": 30,
+        },
+        "all_days": {},
+        "measured_days": {code: {} for code in no2},
+    }
+    for name, test in tests.items():
+        flags = [bool(test(i)) for i in range(len(wind))]
+        result["all_days"][name] = sum(flags)
+        for code, values in no2.items():
+            result["measured_days"][code][name] = sum(
+                flag and value is not None for flag, value in zip(flags, values)
+            )
+    return result
 
 
 def build(payloads: dict[str, object], info: dict) -> None:
@@ -210,6 +265,11 @@ def build(payloads: dict[str, object], info: dict) -> None:
     info["first_day"] = iso[0]
     info["last_day"] = iso[-1]
     info["measured_days"] = counts
+    info["definitions"] = class_counts(
+        series,
+        payloads["calendar.json"],
+        {c: payloads[f"no2_{c}.json"]["no2"] for c in data.STATIONS},
+    )
 
 
 def main() -> None:
@@ -243,6 +303,13 @@ def main() -> None:
     )
     for code, count in info["measured_days"].items():
         print(f"  {code}: {count} measured days")
+    definitions = info["definitions"]
+    print(f"Wind quartiles (km/h): {definitions['wind_quartiles_kmh']}")
+    for name, count in definitions["all_days"].items():
+        line = ", ".join(
+            f"{c} {m[name]}" for c, m in definitions["measured_days"].items()
+        )
+        print(f"  {name:<14} all {count:5d} | measured: {line}")
     for path in sorted(OUT.glob("*.json")):
         print(f"  {path.name:<24} {path.stat().st_size / 1024:7.1f} KB")
 

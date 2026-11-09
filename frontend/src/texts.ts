@@ -324,3 +324,50 @@ export const EVENTS_INFO: Term = {
     'Die Markierungen zeigen, wann etwas passiert ist, nicht, was es bewirkt hat.',
   more: 'Die ULEZ (Ultra Low Emission Zone) ist eine Londoner Umweltzone mit Gebühr für ältere Fahrzeuge. Ob Corona oder die ULEZ die Werte verändert haben, lässt sich aus einem Monatsmittel allein nicht sagen. Wetter, Verkehr und der Standort der Station spielen ebenfalls mit.',
 }
+
+export const PLAYGROUND = {
+  tab: 'Spielwiese',
+  title: 'NO₂ Playground',
+  tagline: 'Erkunden. Kombinieren. Experimentieren.',
+  close: 'Spielwiese schließen',
+  stationsLabel: 'Stationen',
+  sections: {
+    explore: 'Erkunden',
+    combine: 'Kombinieren',
+    experiment: 'Experimentieren',
+  },
+  soon: 'Dieser Bereich entsteht in einer der nächsten Stufen. Die Daten sind schon geladen.',
+  loadError: 'Die Daten für die Spielwiese konnten nicht geladen werden.',
+  examplesTitle: 'Beispiel-Experimente',
+  examples: [
+    {
+      title: 'Wie viel macht Wind aus?',
+      text: 'Windige gegen windstille Tage, bei sonst gleichen Bedingungen.',
+    },
+    {
+      title: 'Wie anders sind Feiertage?',
+      text: 'Bank Holidays gegen normale Werktage und Wochenenden.',
+    },
+    {
+      title: 'Corona: Lockdown gegen Normalbetrieb',
+      text: 'Lockdown-Tage gegen vergleichbare Tage in anderen Jahren.',
+    },
+  ] as { title: string; text: string }[],
+  dataTitle: 'Datenbasis',
+  holidaysLine: (count: number) => `${count} Bank Holidays in England`,
+  weatherNote:
+    'Wetter: Reanalyse ERA5 (über Open-Meteo), ein Wert für ganz Zentrallondon. Temperatur und Luftfeuchte sind der Mittelwert der fünf höhenkorrigierten Stationswerte.',
+}
+
+export function playgroundDays(days: number, first: string, last: string): string {
+  return `${days.toLocaleString('de-DE')} Tage, ${formatDay(first)} bis ${formatDay(last)}`
+}
+
+export function playgroundMeasured(
+  code: string,
+  measured: number,
+  days: number,
+): string {
+  const percent = Math.round((measured / days) * 100)
+  return `${code}: ${measured.toLocaleString('de-DE')} gemessene Tage (${percent} %)`
+}
