@@ -144,3 +144,37 @@
 .pgc-diff { margin: 0; font-size: 0.9rem; }
 .pgc-plot { min-width: 0; }
 .pgc-nocause { padding: 6px 10px; border-left: 3px solid var(--navy); background: rgba(29, 42, 74, 0.04); }
+
+/* Experimentieren */
+.pge { display: grid; gap: 12px; min-width: 0; }
+.pge-modes { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 8px; }
+.pge-mode { text-align: left; display: grid; gap: 4px; padding: 10px 12px; border: 2px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--ink); font: inherit; font-size: 0.85rem; cursor: pointer; }
+.pge-mode strong { font-size: 0.95rem; }
+.pge-mode[aria-pressed='true'].pge-mode-explain { border-color: #2a78d6; background: rgba(42, 120, 214, 0.08); }
+.pge-mode[aria-pressed='true'].pge-mode-forecast { border-color: #eb6834; background: rgba(235, 104, 52, 0.08); }
+.pge-mode:focus-visible { outline: 2px solid var(--navy); outline-offset: 2px; }
+.pge-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; align-items: start; }
+.pge-number { font: inherit; font-size: 0.85rem; padding: 3px 6px; border: 1px solid var(--line); border-radius: 6px; width: 7rem; max-width: 100%; }
+.pge-group { display: grid; gap: 4px; }
+.pge-chip-locked { opacity: 0.55; border-style: dashed; cursor: not-allowed; }
+.pge-chip-locked[aria-pressed='true'] { background: var(--bg); color: var(--muted); border-color: var(--muted); }
+.pge-locked { display: grid; gap: 4px; padding: 8px 10px; border: 1px dashed var(--line); border-radius: 8px; font-size: 0.85rem; }
+.pge-locked ul { margin: 0; padding-left: 1.1rem; display: grid; gap: 2px; }
+.pge-dates { display: flex; flex-wrap: wrap; gap: 8px; }
+.pge-dates input { font: inherit; font-size: 0.85rem; padding: 3px 6px; border: 1px solid var(--line); border-radius: 6px; min-width: 0; }
+.pge-bar { position: relative; height: 14px; border-radius: 7px; background: var(--line); overflow: hidden; }
+.pge-bar span { position: absolute; top: 0; bottom: 0; }
+.pge-bar-train, .pge-key-train { background: #2a78d6; }
+.pge-bar-test, .pge-key-test { background: #eb6834; }
+.pge-key { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; }
+.pge-run { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.pge-warn { padding: 6px 10px; border-left: 3px solid #eb6834; background: rgba(235, 104, 52, 0.08); }
+.pge-results { display: grid; gap: 12px; min-width: 0; }
+.pge-stale > .pgx-chart { opacity: 0.55; }
+.pge-h { margin: 0; font-size: 0.95rem; }
+.pge-table-wrap { overflow-x: auto; max-width: 100%; }
+.pge-row-model th, .pge-row-model td { font-weight: 700; }
+.pge-swatch { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; }
+.pge-plot { min-width: 0; }
+.pge-readout { margin: 0; min-height: 1.4em; font-size: 0.8rem; color: var(--muted); }
+.pge-rowlabel { font-size: 11px; }

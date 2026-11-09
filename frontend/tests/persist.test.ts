@@ -48,9 +48,14 @@ function sampleState(): PlaygroundState {
     },
   ]
   state.model = {
-    features: ['weekday'],
+    kind: 'boosting',
+    mode: 'forecast',
+    horizon: 30,
+    station: 'KC1',
+    features: ['weekday', 'temperature_2m_mean'],
     trainPeriod: ['2018-01-01', '2023-12-31'],
     testPeriod: ['2024-01-01', '2025-12-31'],
+    params: { ridge: 10, trees: 50, depth: 2, rate: 0.2 },
   }
   return state
 }

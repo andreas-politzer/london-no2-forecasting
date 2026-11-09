@@ -48,9 +48,13 @@ function validRaw() {
       },
     ],
     model: {
+      kind: 'linear',
+      mode: 'explain',
+      horizon: 7,
       features: ['weekday', 'temperature_2m_mean'],
       trainPeriod: ['2018-01-01', '2023-12-31'],
       testPeriod: ['2024-01-01', '2025-12-31'],
+      params: { ridge: 1, trees: 100, depth: 3, rate: 0.1 },
     },
   }
 }
