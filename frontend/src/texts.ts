@@ -339,24 +339,16 @@ export const PLAYGROUND = {
   soon: 'Dieser Bereich entsteht in einer der nächsten Stufen. Die Daten sind schon geladen.',
   loadError: 'Die Daten für die Spielwiese konnten nicht geladen werden.',
   examplesTitle: 'Beispiel-Experimente',
-  examples: [
-    {
-      title: 'Wie viel macht Wind aus?',
-      text: 'Windige gegen windstille Tage, bei sonst gleichen Bedingungen.',
-    },
-    {
-      title: 'Wie anders sind Feiertage?',
-      text: 'Bank Holidays gegen normale Werktage und Wochenenden.',
-    },
-    {
-      title: 'Corona: Lockdown gegen Normalbetrieb',
-      text: 'Lockdown-Tage gegen vergleichbare Tage in anderen Jahren.',
-    },
-  ] as { title: string; text: string }[],
+  examplesNote:
+    'Ein Beispiel ersetzt die aktuellen Einstellungen. Speichere sie vorher, wenn du sie behalten möchtest. Jedes Beispiel lässt sich danach frei verändern.',
+  examplesLoad: 'Laden',
+  examplesLoaded: (title: string) => `Beispiel geladen: ${title}`,
   dataTitle: 'Datenbasis',
   holidaysLine: (count: number) => `${count} Bank Holidays in England`,
   weatherNote:
-    'Wetter: Reanalyse ERA5 (über Open-Meteo), ein Wert für ganz Zentrallondon. Temperatur und Luftfeuchte sind der Mittelwert der fünf höhenkorrigierten Stationswerte.',
+    'Wetter: keine Messung an den Stationen, sondern die Reanalyse ERA5 (über Open-Meteo), ein Wert je Tag für ganz Zentrallondon.',
+  weatherMore: (cell: [number, number], temperature: number, humidity: number) =>
+    `ERA5 ist eine Modellrechnung, die Beobachtungen mit einem Wettermodell verbindet. Gemessen wurde an den Luftmessstationen nur das NO₂, nicht das Wetter. Für alle Stationen wird dieselbe Gitterzelle verwendet (Gitter von 0,25 Grad, grob 20 bis 30 km, Mitte bei ${cell[0].toLocaleString('de-DE')} °N, ${Math.abs(cell[1]).toLocaleString('de-DE')} °W). Wind, Regen und Schnee sind deshalb an allen Stationen gleich. Temperatur und Luftfeuchte sind der Mittelwert der fünf höhenkorrigierten Stationswerte; sie unterscheiden sich zwischen den Stationen um höchstens ${temperature.toLocaleString('de-DE')} °C und ${humidity.toLocaleString('de-DE')} ${humidity === 1 ? 'Prozentpunkt' : 'Prozentpunkte'}. Die Tage laufen wie beim NO₂ nach GMT. Das Wetter direkt an der Straße, etwa Windschatten zwischen Häusern, kennt die Rechnung nicht.`,
 }
 
 export function playgroundDays(days: number, first: string, last: string): string {

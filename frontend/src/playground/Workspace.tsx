@@ -1,9 +1,10 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { PLAYGROUND, playgroundDays, playgroundMeasured } from '../texts'
 import { buildEngine } from './adapter'
 import { toggleStation } from './charts/chartActions'
 import Combiner from './compare/Combiner'
 import Experimenter from './experiment/Experimenter'
+import { EXAMPLES, applyExample } from './examples'
 import type { PlaygroundData } from './data'
 import Explorer from './Explorer'
 import { PGU, repairLabel } from './labels'
@@ -40,6 +41,7 @@ export default function Workspace({ data, stationList, initialStation }: Props) 
   const session = usePlaygroundSession(ctx)
   const engine = useMemo(() => buildEngine(data), [data])
   const { state, update } = session
+  const [loaded, setLoaded] = useState<string | null>(null)
 
   return (
     <>
@@ -102,14 +104,30 @@ export default function Workspace({ data, stationList, initialStation }: Props) 
 
       <section>
         <h3 className="block-title">{PLAYGROUND.examplesTitle}</h3>
+        <p className="pgx-note">{PLAYGROUND.examplesNote}</p>
         <ul className="pgw-examples">
-          {PLAYGROUND.examples.map((example) => (
-            <li key={example.title} className="pgw-card">
+          {EXAMPLES.map((example) => (
+            <li key={example.id} className="pgw-card">
               <h4>{example.title}</h4>
               <p>{example.text}</p>
+              <button
+                type="button"
+                className="pgx-btn"
+                onClick={() => {
+                  session.replace(applyExample(ctx, example))
+                  setLoaded(example.title)
+                }}
+              >
+                {PLAYGROUND.examplesLoad}
+              </button>
             </li>
           ))}
         </ul>
+        {loaded && (
+          <p className="pgx-hint" role="status">
+            {PLAYGROUND.examplesLoaded(loaded)}
+          </p>
+        )}
       </section>
 
       <section>
@@ -122,7 +140,16 @@ export default function Workspace({ data, stationList, initialStation }: Props) 
             </div>
           ))}
           <div>{PLAYGROUND.holidaysLine(data.meta.holidays.count)}</div>
-          <div>{PLAYGROUND.weatherNote}</div>
+          <details className="pgw-weather">
+            <summary>{PLAYGROUND.weatherNote}</summary>
+            <p>
+              {PLAYGROUND.weatherMore(
+                data.weather.grid_cell,
+                data.meta.weather_station_spread.temperature_2m_mean ?? 0,
+                data.meta.weather_station_spread.relative_humidity_2m_mean ?? 0,
+              )}
+            </p>
+          </details>
         </div>
       </section>
     </>

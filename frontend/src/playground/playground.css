@@ -178,3 +178,9 @@
 .pge-plot { min-width: 0; }
 .pge-readout { margin: 0; min-height: 1.4em; font-size: 0.8rem; color: var(--muted); }
 .pge-rowlabel { font-size: 11px; }
+
+.pgw-card { display: grid; align-content: space-between; gap: 8px; }
+.pgw-card .pgx-btn { justify-self: start; }
+.pgw-weather summary { cursor: pointer; }
+.pgw-weather summary:focus-visible { outline: 2px solid var(--navy); outline-offset: 2px; }
+.pgw-weather p { margin: 6px 0 0; font-size: 0.85rem; }
