@@ -3,6 +3,7 @@ import { PLAYGROUND, playgroundDays, playgroundMeasured } from '../texts'
 import { buildEngine } from './adapter'
 import { toggleStation } from './charts/chartActions'
 import Combiner from './compare/Combiner'
+import Experimenter from './experiment/Experimenter'
 import type { PlaygroundData } from './data'
 import Explorer from './Explorer'
 import { PGU, repairLabel } from './labels'
@@ -96,7 +97,7 @@ export default function Workspace({ data, stationList, initialStation }: Props) 
       ) : state.mode === 'combine' ? (
         <Combiner engine={engine} session={session} ctx={ctx} stationList={stationList} />
       ) : (
-        <p className="tab-note">{PLAYGROUND.soon}</p>
+        <Experimenter engine={engine} session={session} ctx={ctx} stationList={stationList} />
       )}
 
       <section>
